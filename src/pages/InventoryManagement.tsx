@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Minus, Package } from 'lucide-react';
+import { Plus, Minus, Package, Image, Upload } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ interface Prize {
   image: string;
   cost: number;
   stock: number;
+  hasCustomImage?: boolean;
 }
 
 const InventoryManagement = () => {
@@ -31,19 +32,24 @@ const InventoryManagement = () => {
   const [newPrize, setNewPrize] = useState({
     name: '',
     cost: '',
-    stock: ''
+    stock: '',
+    image: null as File | null,
+    imagePreview: ''
   });
   
   const [prizes, setPrizes] = useState<Prize[]>([
-    { id: 1, name: 'Audífonos Bluetooth', image: '/placeholder.svg', cost: 500, stock: 15 },
-    { id: 2, name: 'Gorra SanjerFit', image: '/placeholder.svg', cost: 200, stock: 42 },
-    { id: 3, name: 'Vitaminas (30 días)', image: '/placeholder.svg', cost: 350, stock: 20 },
-    { id: 4, name: 'Chaqueta Deportiva', image: '/placeholder.svg', cost: 800, stock: 8 },
-    { id: 5, name: 'Botella Deportiva', image: '/placeholder.svg', cost: 150, stock: 26 },
-    { id: 6, name: 'Mochila Gym', image: '/placeholder.svg', cost: 400, stock: 12 },
-    { id: 7, name: 'Smartwatch', image: '/placeholder.svg', cost: 1200, stock: 5 },
-    { id: 8, name: 'Toalla Fitness', image: '/placeholder.svg', cost: 100, stock: 30 },
+    { id: 1, name: 'Gorra deportiva', image: '/placeholder.svg', cost: 60, stock: 45 },
+    { id: 2, name: 'Pachón reutilizable', image: '/placeholder.svg', cost: 80, stock: 30 },
+    { id: 3, name: 'Camiseta SanjerFit', image: '/placeholder.svg', cost: 120, stock: 25 },
+    { id: 4, name: 'Snack saludable', image: '/placeholder.svg', cost: 40, stock: 50 },
+    { id: 5, name: 'Membresía Gym (1 mes)', image: '/placeholder.svg', cost: 250, stock: 10 },
   ]);
+  
+  const [editingPrize, setEditingPrize] = useState<Prize | null>(null);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [selectedPrizeForImage, setSelectedPrizeForImage] = useState<Prize | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState('');
   
   const handleUpdateStock = (id: number, increment: boolean) => {
     setPrizes(prizes.map(prize => {
@@ -62,24 +68,75 @@ const InventoryManagement = () => {
     });
   };
   
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewPrize({
+        ...newPrize,
+        image: file,
+        imagePreview: URL.createObjectURL(file)
+      });
+    }
+  };
+  
+  const handlePrizeImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+  
+  const savePrizeImage = () => {
+    if (selectedPrizeForImage && imagePreview) {
+      setPrizes(prizes.map(prize => {
+        if (prize.id === selectedPrizeForImage.id) {
+          return {
+            ...prize,
+            image: imagePreview, // In a real app, this would be the URL after upload
+            hasCustomImage: true
+          };
+        }
+        return prize;
+      }));
+      
+      setShowImageDialog(false);
+      setImagePreview('');
+      setUploadedImage(null);
+      
+      toast({
+        title: "Imagen actualizada",
+        description: "La imagen del premio ha sido actualizada correctamente",
+      });
+    }
+  };
+  
+  const openImageUpload = (prize: Prize) => {
+    setSelectedPrizeForImage(prize);
+    setShowImageDialog(true);
+    setImagePreview('');
+  };
+  
   const handleAddPrize = () => {
-    const newId = Math.max(...prizes.map(p => p.id)) + 1;
+    const newId = Math.max(...prizes.map(p => p.id), 0) + 1;
     
-    setPrizes([
-      ...prizes,
-      {
-        id: newId,
-        name: newPrize.name,
-        image: '/placeholder.svg',
-        cost: parseInt(newPrize.cost) || 0,
-        stock: parseInt(newPrize.stock) || 0
-      }
-    ]);
+    const newPrizeItem: Prize = {
+      id: newId,
+      name: newPrize.name,
+      image: newPrize.imagePreview || '/placeholder.svg',
+      cost: parseInt(newPrize.cost) || 0,
+      stock: parseInt(newPrize.stock) || 0,
+      hasCustomImage: !!newPrize.imagePreview
+    };
+    
+    setPrizes([...prizes, newPrizeItem]);
     
     setNewPrize({
       name: '',
       cost: '',
-      stock: ''
+      stock: '',
+      image: null,
+      imagePreview: ''
     });
     
     toast({
@@ -132,9 +189,42 @@ const InventoryManagement = () => {
                     id="name"
                     value={newPrize.name}
                     onChange={(e) => setNewPrize({...newPrize, name: e.target.value})}
-                    placeholder="Ej: Audífonos Bluetooth"
+                    placeholder="Ej: Gorra deportiva"
                   />
                 </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="image">Imagen del Premio</Label>
+                  <div className="flex items-start space-x-4">
+                    <div className="w-20 h-20 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+                      {newPrize.imagePreview ? (
+                        <img src={newPrize.imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <Image className="h-8 w-8 text-gray-300" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Input
+                          id="prize-image"
+                          name="prize-image"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageUpload}
+                        />
+                        <Label htmlFor="prize-image" className="inline-flex items-center justify-center w-full px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
+                          <Upload className="h-4 w-4 mr-2" />
+                          Subir imagen
+                        </Label>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Formatos aceptados: JPG, PNG. Tamaño máximo: 5MB.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="cost">Costo en CoinFits</Label>
                   <Input 
@@ -142,7 +232,7 @@ const InventoryManagement = () => {
                     type="number"
                     value={newPrize.cost}
                     onChange={(e) => setNewPrize({...newPrize, cost: e.target.value})}
-                    placeholder="Ej: 500"
+                    placeholder="Ej: 100"
                   />
                 </div>
                 <div className="space-y-2">
@@ -174,12 +264,18 @@ const InventoryManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredPrizes.map((prize) => (
             <Card key={prize.id} className="overflow-hidden">
-              <div className="h-40 bg-sanjer-lightgray flex items-center justify-center">
+              <div 
+                className="h-40 bg-sanjer-lightgray flex items-center justify-center relative cursor-pointer group"
+                onClick={() => openImageUpload(prize)}
+              >
                 <img 
                   src={prize.image} 
                   alt={prize.name}
                   className="h-32 object-contain"
                 />
+                <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Upload className="h-8 w-8 text-white" />
+                </div>
               </div>
               
               <div className="p-4">
@@ -223,6 +319,63 @@ const InventoryManagement = () => {
           </div>
         )}
       </div>
+      
+      {/* Image Upload Dialog */}
+      <Dialog open={showImageDialog} onOpenChange={setShowImageDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Actualizar Imagen</DialogTitle>
+            <DialogDescription>
+              Selecciona una nueva imagen para este premio.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="w-full h-48 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+                ) : (
+                  <Image className="h-12 w-12 text-gray-300" />
+                )}
+              </div>
+              
+              <div className="w-full">
+                <div className="relative">
+                  <Input
+                    id="prize-image-update"
+                    name="prize-image-update"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePrizeImageUpload}
+                  />
+                  <Label htmlFor="prize-image-update" className="inline-flex items-center justify-center w-full px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Seleccionar imagen
+                  </Label>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Formatos aceptados: JPG, PNG. Tamaño máximo: 5MB.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImageDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={savePrizeImage} 
+              disabled={!imagePreview}
+              className="bg-sanjer-green hover:bg-green-600"
+            >
+              Guardar Imagen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

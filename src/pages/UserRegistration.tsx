@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AdminHeader from '@/components/AdminHeader';
-import { Lock, Mail } from 'lucide-react';
+import { Lock, Mail, Upload, Image, User } from 'lucide-react';
 
 const UserRegistration = () => {
   const { toast } = useToast();
@@ -31,7 +31,12 @@ const UserRegistration = () => {
     // Account data
     email: '',
     password: '',
+    confirmarPassword: '',
     nivelAsignado: 'KoalaFit',
+    
+    // Photo
+    photo: null as File | null,
+    photoPreview: '',
   });
 
   useEffect(() => {
@@ -53,6 +58,7 @@ const UserRegistration = () => {
         ...prev,
         email,
         password,
+        confirmarPassword: password
       }));
     }
   }, [formData.nombre]);
@@ -78,6 +84,42 @@ const UserRegistration = () => {
     }
   };
 
+  // Calculate automatic level based on health metrics
+  const calculateLevel = () => {
+    const bmi = parseFloat(formData.indiceMasaCorporal);
+    
+    if (isNaN(bmi)) return 'KoalaFit'; // Default level
+    
+    if (bmi > 30) {
+      return 'KoalaFit';
+    } else if (bmi > 25) {
+      return 'JaguarFit';
+    } else {
+      return 'HalcónFit';
+    }
+  };
+
+  useEffect(() => {
+    if (formData.indiceMasaCorporal) {
+      const calculatedLevel = calculateLevel();
+      setFormData(prev => ({
+        ...prev,
+        nivelAsignado: calculatedLevel
+      }));
+    }
+  }, [formData.indiceMasaCorporal]);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFormData(prev => ({
+        ...prev,
+        photo: file,
+        photoPreview: URL.createObjectURL(file)
+      }));
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -93,6 +135,15 @@ const UserRegistration = () => {
     setFormData(prev => ({
       ...prev,
       nivelAsignado: value
+    }));
+  };
+
+  const handlePasswordManualEntry = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+      confirmarPassword: name === 'password' ? value : prev.confirmarPassword
     }));
   };
 
@@ -145,6 +196,43 @@ const UserRegistration = () => {
                         <Label htmlFor="femenino">Femenino</Label>
                       </div>
                     </RadioGroup>
+                  </div>
+                  
+                  {/* Photo upload section */}
+                  <div className="col-span-1 md:col-span-2 space-y-2">
+                    <Label htmlFor="photo">Fotografía:</Label>
+                    <div className="flex items-start space-x-4">
+                      <div className="w-32 h-32 rounded-md border border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50">
+                        {formData.photoPreview ? (
+                          <img 
+                            src={formData.photoPreview} 
+                            alt="Vista previa" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-12 w-12 text-gray-300" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="relative">
+                          <Input
+                            id="photo"
+                            name="photo"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handlePhotoUpload}
+                          />
+                          <Label htmlFor="photo" className="inline-flex items-center justify-center w-full px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
+                            <Upload className="h-4 w-4 mr-2" />
+                            Subir fotografía
+                          </Label>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Formatos aceptados: JPG, PNG. Tamaño máximo: 5MB.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
@@ -260,7 +348,13 @@ const UserRegistration = () => {
                 </div>
                 
                 <div className="mt-6">
-                  <p className="text-sm text-gray-500 mb-2">Nivel asignado basado en evaluación:</p>
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-md mb-4">
+                    <h4 className="font-medium mb-2">Nivel asignado automáticamente basado en evaluación:</h4>
+                    <p className="text-sm text-gray-600 mb-2">
+                      El nivel se calcula automáticamente según el IMC del colaborador, pero puede modificarlo manualmente si es necesario.
+                    </p>
+                  </div>
+                  
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroup 
@@ -293,6 +387,21 @@ const UserRegistration = () => {
                       </RadioGroup>
                     </div>
                   </div>
+                  
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-md">
+                    <div className="border-l-4 border-purple-400 pl-3">
+                      <h5 className="font-medium">KoalaFit</h5>
+                      <p className="text-xs text-gray-600">Metas: 3,000 pasos, 20 min activos</p>
+                    </div>
+                    <div className="border-l-4 border-blue-400 pl-3">
+                      <h5 className="font-medium">JaguarFit</h5>
+                      <p className="text-xs text-gray-600">Metas: 6,000 pasos, 30 min activos</p>
+                    </div>
+                    <div className="border-l-4 border-green-400 pl-3">
+                      <h5 className="font-medium">HalcónFit</h5>
+                      <p className="text-xs text-gray-600">Metas: 10,000 pasos, 45 min activos</p>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
               
@@ -323,10 +432,25 @@ const UserRegistration = () => {
                       name="password"
                       type="text"
                       value={formData.password}
+                      onChange={handlePasswordManualEntry}
+                      className="bg-gray-50"
+                    />
+                    <p className="text-xs text-gray-500">Puede editar esta contraseña o dejar la generada automáticamente.</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmarPassword" className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" /> Confirmar Contraseña:
+                    </Label>
+                    <Input
+                      id="confirmarPassword"
+                      name="confirmarPassword"
+                      type="text"
+                      value={formData.confirmarPassword}
                       onChange={handleChange}
                       className="bg-gray-50"
                     />
-                    <p className="text-xs text-gray-500">Generada automáticamente. El colaborador podrá cambiarla después.</p>
+                    <p className="text-xs text-gray-500">Confirme la contraseña del colaborador.</p>
                   </div>
                 </div>
                 
