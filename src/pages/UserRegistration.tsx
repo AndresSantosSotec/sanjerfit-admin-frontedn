@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AdminHeader from '@/components/AdminHeader';
-import { Lock, Mail, Upload, Image, User } from 'lucide-react';
+import { Lock, Mail, Upload, Image, User, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 
 const UserRegistration = () => {
   const { toast } = useToast();
@@ -38,6 +38,14 @@ const UserRegistration = () => {
     photo: null as File | null,
     photoPreview: '',
   });
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({
+    hasMinLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false
+  });
 
   useEffect(() => {
     if (formData.nombre) {
@@ -52,16 +60,40 @@ const UserRegistration = () => {
       
       // Generate a simple password based on name + random digits
       const randomDigits = Math.floor(1000 + Math.random() * 9000);
-      const password = `${normalizedName.substring(0, 5)}${randomDigits}`;
+      const password = `${normalizedName.substring(0, 3)}${randomDigits}`;
       
       setFormData(prev => ({
         ...prev,
-        email,
-        password,
-        confirmarPassword: password
+        email
       }));
     }
   }, [formData.nombre]);
+  
+  // Add password strength check
+  useEffect(() => {
+    const password = formData.password;
+    setPasswordStrength({
+      hasMinLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password)
+    });
+  }, [formData.password]);
+  
+  const getPasswordStrengthLevel = () => {
+    const { hasMinLength, hasUpperCase, hasLowerCase, hasNumber } = passwordStrength;
+    const criteriaMet = [hasMinLength, hasUpperCase, hasLowerCase, hasNumber].filter(Boolean).length;
+    
+    if (criteriaMet === 0) return { level: "muy débil", color: "bg-red-500" };
+    if (criteriaMet === 1) return { level: "débil", color: "bg-red-400" };
+    if (criteriaMet === 2) return { level: "moderada", color: "bg-yellow-500" };
+    if (criteriaMet === 3) return { level: "fuerte", color: "bg-green-400" };
+    return { level: "muy fuerte", color: "bg-green-600" };
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -112,6 +144,26 @@ const UserRegistration = () => {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "Error al subir la imagen",
+          description: "La imagen no debe superar los 2MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Check file type
+      if (!['image/jpeg', 'image/png'].includes(file.type)) {
+        toast({
+          title: "Formato no válido",
+          description: "Solo se permiten imágenes JPG o PNG",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       setFormData(prev => ({
         ...prev,
         photo: file,
@@ -122,6 +174,25 @@ const UserRegistration = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password fields
+    if (!formData.password) {
+      toast({
+        title: "Error de validación",
+        description: "La contraseña es obligatoria",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (formData.password !== formData.confirmarPassword) {
+      toast({
+        title: "Error de validación",
+        description: "Las contraseñas no coinciden",
+        variant: "destructive"
+      });
+      return;
+    }
     
     toast({
       title: "Colaborador registrado",
@@ -138,14 +209,7 @@ const UserRegistration = () => {
     }));
   };
 
-  const handlePasswordManualEntry = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-      confirmarPassword: name === 'password' ? value : prev.confirmarPassword
-    }));
-  };
+  const passwordStrengthInfo = getPasswordStrengthLevel();
 
   return (
     <div className="flex flex-col h-full">
@@ -219,9 +283,9 @@ const UserRegistration = () => {
                             id="photo"
                             name="photo"
                             type="file"
-                            accept="image/*"
                             className="hidden"
                             onChange={handlePhotoUpload}
+                            accept="image/jpeg, image/png"
                           />
                           <Label htmlFor="photo" className="inline-flex items-center justify-center w-full px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
                             <Upload className="h-4 w-4 mr-2" />
@@ -229,7 +293,7 @@ const UserRegistration = () => {
                           </Label>
                         </div>
                         <p className="text-xs text-gray-500 mt-2">
-                          Formatos aceptados: JPG, PNG. Tamaño máximo: 5MB.
+                          Formatos aceptados: JPG, PNG. Tamaño máximo: 2MB.
                         </p>
                       </div>
                     </div>
@@ -425,32 +489,94 @@ const UserRegistration = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="password" className="flex items-center gap-2">
-                      <Lock className="h-4 w-4" /> Contraseña:
+                      <Lock className="h-4 w-4" /> Contraseña: <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      id="password"
-                      name="password"
-                      type="text"
-                      value={formData.password}
-                      onChange={handlePasswordManualEntry}
-                      className="bg-gray-50"
-                    />
-                    <p className="text-xs text-gray-500">Puede editar esta contraseña o dejar la generada automáticamente.</p>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="pr-10"
+                        required
+                      />
+                      <button 
+                        type="button"
+                        onClick={togglePasswordVisibility}
+                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    
+                    {/* Password strength indicator */}
+                    {formData.password && (
+                      <div className="space-y-2 mt-2">
+                        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${passwordStrengthInfo.color}`} 
+                            style={{ 
+                              width: `${Object.values(passwordStrength).filter(Boolean).length * 25}%` 
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Seguridad: <span className="font-medium">{passwordStrengthInfo.level}</span>
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-xs">
+                          <div className="flex items-center gap-1">
+                            {passwordStrength.hasMinLength ? 
+                              <CheckCircle2 className="h-3 w-3 text-green-500" /> : 
+                              <XCircle className="h-3 w-3 text-red-500" />
+                            }
+                            Mínimo 8 caracteres
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {passwordStrength.hasUpperCase ? 
+                              <CheckCircle2 className="h-3 w-3 text-green-500" /> : 
+                              <XCircle className="h-3 w-3 text-red-500" />
+                            }
+                            Una letra mayúscula
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {passwordStrength.hasLowerCase ? 
+                              <CheckCircle2 className="h-3 w-3 text-green-500" /> : 
+                              <XCircle className="h-3 w-3 text-red-500" />
+                            }
+                            Una letra minúscula
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {passwordStrength.hasNumber ? 
+                              <CheckCircle2 className="h-3 w-3 text-green-500" /> : 
+                              <XCircle className="h-3 w-3 text-red-500" />
+                            }
+                            Un número
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="confirmarPassword" className="flex items-center gap-2">
-                      <Lock className="h-4 w-4" /> Confirmar Contraseña:
+                      <Lock className="h-4 w-4" /> Confirmar Contraseña: <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      id="confirmarPassword"
-                      name="confirmarPassword"
-                      type="text"
-                      value={formData.confirmarPassword}
-                      onChange={handleChange}
-                      className="bg-gray-50"
-                    />
-                    <p className="text-xs text-gray-500">Confirme la contraseña del colaborador.</p>
+                    <div className="relative">
+                      <Input
+                        id="confirmarPassword"
+                        name="confirmarPassword"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.confirmarPassword}
+                        onChange={handleChange}
+                        className={formData.password && formData.confirmarPassword && formData.password !== formData.confirmarPassword ? "border-red-500" : ""}
+                        required
+                      />
+                    </div>
+                    {formData.password && formData.confirmarPassword && formData.password !== formData.confirmarPassword && (
+                      <p className="text-xs text-red-500">Las contraseñas no coinciden</p>
+                    )}
                   </div>
                 </div>
                 
