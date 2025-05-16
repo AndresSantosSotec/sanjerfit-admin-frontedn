@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AdminHeader from '@/components/AdminHeader';
+import { Lock, Mail } from 'lucide-react';
 
 const UserRegistration = () => {
   const { toast } = useToast();
@@ -25,8 +26,36 @@ const UserRegistration = () => {
     tipoSangre: '',
     alergias: '',
     padecimientos: '',
-    indiceMasaCorporal: ''
+    indiceMasaCorporal: '',
+    
+    // Account data
+    email: '',
+    password: '',
+    nivelAsignado: 'KoalaFit',
   });
+
+  useEffect(() => {
+    if (formData.nombre) {
+      // Generate email based on name (removing spaces and accents)
+      const normalizedName = formData.nombre
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, ".");
+      
+      const email = `${normalizedName}@sanjerfit.com`;
+      
+      // Generate a simple password based on name + random digits
+      const randomDigits = Math.floor(1000 + Math.random() * 9000);
+      const password = `${normalizedName.substring(0, 5)}${randomDigits}`;
+      
+      setFormData(prev => ({
+        ...prev,
+        email,
+        password,
+      }));
+    }
+  }, [formData.nombre]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -60,6 +89,13 @@ const UserRegistration = () => {
     console.log("Form data submitted:", formData);
   };
 
+  const handleNivelChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      nivelAsignado: value
+    }));
+  };
+
   return (
     <div className="flex flex-col h-full">
       <AdminHeader 
@@ -73,6 +109,7 @@ const UserRegistration = () => {
             <TabsList className="mb-6">
               <TabsTrigger value="personal" className="text-sm">Datos Generales</TabsTrigger>
               <TabsTrigger value="medical" className="text-sm">Datos Médicos</TabsTrigger>
+              <TabsTrigger value="account" className="text-sm">Cuenta de Usuario</TabsTrigger>
             </TabsList>
             
             <form onSubmit={handleSubmit}>
@@ -226,18 +263,79 @@ const UserRegistration = () => {
                   <p className="text-sm text-gray-500 mb-2">Nivel asignado basado en evaluación:</p>
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full bg-purple-500"></div>
-                      <span>KoalaFit</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                      <span>JaguarFit</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                      <span>HalcónFit</span>
+                      <RadioGroup 
+                        name="nivelAsignado" 
+                        value={formData.nivelAsignado}
+                        onValueChange={handleNivelChange}
+                        className="flex space-x-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="KoalaFit" id="koala" />
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 rounded-full bg-purple-500"></div>
+                            <Label htmlFor="koala">KoalaFit</Label>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="JaguarFit" id="jaguar" />
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                            <Label htmlFor="jaguar">JaguarFit</Label>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="HalcónFit" id="halcon" />
+                          <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 rounded-full bg-green-500"></div>
+                            <Label htmlFor="halcon">HalcónFit</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
                     </div>
                   </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="account">
+                <h3 className="text-lg font-semibold text-sanjer-blue mb-4">Cuenta de Usuario</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" /> Correo Electrónico:
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="bg-gray-50"
+                    />
+                    <p className="text-xs text-gray-500">Generado automáticamente según el nombre del colaborador</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" /> Contraseña:
+                    </Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="text"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="bg-gray-50"
+                    />
+                    <p className="text-xs text-gray-500">Generada automáticamente. El colaborador podrá cambiarla después.</p>
+                  </div>
+                </div>
+                
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-md">
+                  <h4 className="font-medium text-sanjer-blue mb-2">Credenciales de Acceso</h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Con estas credenciales el colaborador podrá acceder a su cuenta en la aplicación móvil SanjerFit.
+                    Se recomienda que cambie su contraseña después del primer inicio de sesión.
+                  </p>
                 </div>
               </TabsContent>
               
