@@ -148,11 +148,11 @@ const ManageUsers = () => {
         description: `${collaborator.name} ha sido actualizado correctamente`,
       });
     } else {
-      // Add new collaborator
-      const newCollaborator = {
+      // Add new collaborator with status explicitly set to a valid type value
+      const newCollaborator: Collaborator = {
         ...collaborator,
         id: String(Date.now()),
-        status: 'Activo',
+        status: 'Activo', // Explicitly typed as one of the allowed values
         lastActive: new Date().toISOString().split('T')[0]
       };
       setCollaborators(prevCollaborators => [...prevCollaborators, newCollaborator]);
