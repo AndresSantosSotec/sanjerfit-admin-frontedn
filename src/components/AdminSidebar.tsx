@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Award, Package, FileText, Shield } from 'lucide-react';
+import { Users, Award, Package, FileText, Shield, Home } from 'lucide-react';
 import SanjerLogo from './SanjerLogo';
 
 type MenuItem = {
@@ -17,6 +17,12 @@ const AdminSidebar = () => {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const menuItems: MenuItem[] = [
+    {
+      icon: <Home className="h-5 w-5" />,
+      title: "Dashboard",
+      path: "/dashboard",
+      description: "Panel principal",
+    },
     {
       icon: <Users className="h-5 w-5" />,
       title: "Usuarios",
@@ -72,7 +78,9 @@ const AdminSidebar = () => {
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 bg-sanjer-blue flex flex-col">
       <div className="p-4 border-b border-blue-800">
-        <SanjerLogo />
+        <Link to="/dashboard">
+          <SanjerLogo />
+        </Link>
       </div>
       
       <div className="p-4 text-white text-sm">
