@@ -1,6 +1,7 @@
-
 import React from 'react';
-import { Bell, Settings, User } from 'lucide-react';
+import { Bell, Settings, User, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from '@/hooks/use-toast';
 
 interface AdminHeaderProps {
   title: string;
@@ -17,6 +19,38 @@ interface AdminHeaderProps {
 }
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({ title, subtitle }) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/logout`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+          },
+        }
+      );
+      // Limpia el almacenamiento local
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+
+      toast({
+        title: 'Sesión cerrada',
+        description: 'Has sido desconectado correctamente.',
+      });
+      navigate('/login');
+    } catch (error) {
+      toast({
+        title: 'Error al cerrar sesión',
+        description: 'Inténtalo de nuevo.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <header className="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
       <div>
@@ -50,7 +84,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, subtitle }) => {
               <div className="h-8 w-8 rounded-full bg-sanjer-blue flex items-center justify-center text-white">
                 <User className="h-4 w-4" />
               </div>
-              <span className="text-sm font-medium">Admin</span>
+              <span className="text-sm font-medium">
+                {JSON.parse(localStorage.getItem('auth_user') || '{}').name || 'Admin'}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -59,7 +95,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, subtitle }) => {
             <DropdownMenuItem>Perfil</DropdownMenuItem>
             <DropdownMenuItem>Cambiar contraseña</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Cerrar sesión</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Cerrar sesión
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,34 +8,46 @@ import { useToast } from "@/hooks/use-toast";
 import SanjerLogo from '@/components/SanjerLogo';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');           // renombrado
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login authentication
-    setTimeout(() => {
-      if (username && password) {
-        // Normally would validate with backend
-        toast({
-          title: "Inicio de sesión exitoso",
-          description: "Bienvenido al panel de administración",
-        });
-        navigate('/dashboard');
-      } else {
-        toast({
-          title: "Error de inicio de sesión",
-          description: "Por favor ingrese usuario y contraseña válidos",
-          variant: "destructive",
-        });
-      }
+
+    try {
+      const resp = await axios.post(
+        import.meta.env.VITE_API_URL + '/login',
+        { email, password },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      const { token, user } = resp.data;
+      // Guarda en localStorage para usarlo en futuras peticiones
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('auth_user', JSON.stringify(user));
+
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: `Bienvenido, ${user.name}`,
+      });
+
+      navigate('/dashboard');
+    } catch (err: any) {
+      toast({
+        title: "Error de inicio de sesión",
+        description:
+          err.response?.data?.message ||
+          err.response?.data?.errors?.email?.[0] ||
+          "Credenciales inválidas",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -47,13 +59,13 @@ const Login = () => {
         
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username">Usuario / Correo</Label>
+            <Label htmlFor="email">Correo</Label>
             <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Ingrese su usuario"
+              id="email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="usuario@ejemplo.com"
               className="w-full"
               required
             />
@@ -65,23 +77,21 @@ const Login = () => {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Ingrese su contraseña"
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
               className="w-full"
               required
             />
           </div>
           
-          <div className="flex justify-between items-center text-sm">
-            <div className="text-center w-full">
-              <button 
-                type="button" 
-                onClick={() => toast({ title: "Funcionalidad en desarrollo" })}
-                className="text-sanjer-blue hover:underline"
-              >
-                Recordar | Recuperar Contraseña
-              </button>
-            </div>
+          <div className="text-center text-sm">
+            <button 
+              type="button" 
+              onClick={() => toast({ title: "Funcionalidad en desarrollo" })}
+              className="text-sanjer-blue hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
           </div>
           
           <Button 

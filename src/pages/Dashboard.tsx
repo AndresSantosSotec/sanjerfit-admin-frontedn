@@ -1,10 +1,20 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowUpIcon, ArrowDownIcon, Users, Award, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AdminHeader from '@/components/AdminHeader';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      // Si no hay token, redirige a login
+      navigate('/login');
+    }
+  }, [navigate]);
+
   return (
     <div className="flex flex-col h-full">
       <AdminHeader 

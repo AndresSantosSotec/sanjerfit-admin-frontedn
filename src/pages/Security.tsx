@@ -1,314 +1,333 @@
-
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+  Plus, Edit, Trash2, EyeOff, Eye, CheckCircle2, XCircle
+} from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import AdminHeader from '@/components/AdminHeader';
+  Card, CardContent, CardHeader, CardTitle
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog, DialogContent, DialogFooter,
+  DialogHeader, DialogTitle
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import AdminHeader from "@/components/AdminHeader";
 
 interface User {
   id: number;
   name: string;
   email: string;
-  role: string;
+  role: { id: number; name: string };
   status: string;
-  lastLogin: string;
+  last_login: string;
 }
+
+const emptyForm = { name: "", email: "", role_id: 2, password: "", confirmPassword: "" };
 
 const Security = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([
-    { id: 1, name: 'Admin Principal', email: 'admin@sanjerfit.com', role: 'Administrador', status: 'Activo', lastLogin: '16/05/2025' },
-    { id: 2, name: 'Juan Martínez', email: 'j.martinez@sanjerfit.com', role: 'Editor', status: 'Activo', lastLogin: '15/05/2025' },
-    { id: 3, name: 'Sofía Ramírez', email: 's.ramirez@sanjerfit.com', role: 'Visualizador', status: 'Inactivo', lastLogin: '10/05/2025' },
-    { id: 4, name: 'Carlos Dominguez', email: 'c.dominguez@sanjerfit.com', role: 'Editor', status: 'Activo', lastLogin: '14/05/2025' },
-  ]);
-  
-  const [newUser, setNewUser] = useState({
-    name: '',
-    email: '',
-    role: 'Editor'
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [filter, setFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [selected, setSelected] = useState<User | null>(null);
+  const [form, setForm] = useState(emptyForm);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Paginación
+  const [page, setPage] = useState(1);
+  const perPage = 5;
+
+  const api = axios.create({
+    baseURL: import.meta.env.VITE_API_URL,
+    headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` }
   });
-  
-  const handleAddUser = () => {
-    const newId = Math.max(...users.map(u => u.id)) + 1;
-    
-    setUsers([
-      ...users,
-      {
-        id: newId,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        status: 'Activo',
-        lastLogin: '—'
-      }
-    ]);
-    
-    setNewUser({
-      name: '',
-      email: '',
-      role: 'Editor'
-    });
-    
-    toast({
-      title: "Usuario añadido",
-      description: "El nuevo usuario ha sido añadido al sistema",
-    });
+
+  useEffect(() => {
+    api.get('/webadmin/users')
+      .then(r => setUsers(r.data))
+      .catch(e => {
+        if (e.response?.status === 401) {
+          localStorage.clear();
+          navigate('/login');
+        } else {
+          toast({ title: "Error", description: "No se pudo cargar usuarios", variant: 'destructive' });
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Filtro + paginación
+  const filtered = users.filter(u =>
+    u.name.toLowerCase().includes(filter.toLowerCase()) ||
+    u.email.toLowerCase().includes(filter.toLowerCase())
+  );
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const paginated = filtered.slice((page - 1) * perPage, page * perPage);
+
+  const resetForm = () => setForm(emptyForm);
+
+  const handleAdd = () => {
+    const { name, email, password, confirmPassword, role_id } = form;
+    if (!name || !email || !password || password !== confirmPassword) return;
+    api.post('/webadmin/users', { name, email, password, role_id, status: "Activo" })
+      .then(r => {
+        setUsers([r.data, ...users]);
+        toast({ title: "Usuario creado" });
+        setShowAdd(false);
+        resetForm();
+      })
+      .catch(() => toast({ title: "Error al crear", variant: 'destructive' }));
   };
-  
-  const handleRemoveUser = (id: number) => {
-    setUsers(users.filter(user => user.id !== id));
-    
-    toast({
-      title: "Usuario eliminado",
-      description: "El usuario ha sido eliminado del sistema",
-    });
+
+  const openEdit = (u: User) => {
+    setSelected(u);
+    setForm({ name: u.name, email: u.email, role_id: u.role.id, password: "", confirmPassword: "" });
+    setShowEdit(true);
   };
-  
-  const handleChangeStatus = (id: number) => {
-    setUsers(users.map(user => {
-      if (user.id === id) {
-        return {
-          ...user,
-          status: user.status === 'Activo' ? 'Inactivo' : 'Activo'
-        };
-      }
-      return user;
-    }));
-    
-    toast({
-      title: "Estado actualizado",
-      description: "El estado del usuario ha sido actualizado",
-    });
+
+  const handleEdit = () => {
+    if (!selected) return;
+    const payload: any = { role_id: form.role_id };
+    if (form.password && form.password === form.confirmPassword) {
+      payload.password = form.password;
+    }
+    api.put(`/webadmin/users/${selected.id}`, payload)
+      .then(r => {
+        setUsers(users.map(u => u.id === selected.id ? r.data : u));
+        toast({ title: "Usuario actualizado" });
+        setShowEdit(false);
+        resetForm();
+      })
+      .catch(() => toast({ title: "Error al actualizar", variant: 'destructive' }));
+  };
+
+  const handleDelete = (id: number) => {
+    api.delete(`/webadmin/users/${id}`)
+      .then(() => {
+        setUsers(users.filter(u => u.id !== id));
+        toast({ title: "Usuario eliminado" });
+      })
+      .catch(() => toast({ title: "Error al eliminar", variant: 'destructive' }));
+  };
+
+  const handleToggleStatus = (u: User) => {
+    api.put(`/webadmin/users/${u.id}`, { status: u.status === "Activo" ? "Inactivo" : "Activo" })
+      .then(r => {
+        setUsers(users.map(x => x.id === u.id ? r.data : x));
+        toast({ title: "Estado actualizado" });
+      })
+      .catch(() => toast({ title: "Error al actualizar", variant: 'destructive' }));
   };
 
   return (
     <div className="flex flex-col h-full">
-      <AdminHeader 
-        title="Seguridad" 
-        subtitle="Gestión de accesos y usuarios del sistema"
-      />
-      
-      <div className="p-6 flex-1">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Usuarios Administrativos</h2>
-          
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-sanjer-green hover:bg-green-600">
-                <Plus className="h-4 w-4 mr-2" />
-                Añadir Usuario
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Añadir Nuevo Usuario</DialogTitle>
-                <DialogDescription>
-                  Ingresa la información del nuevo usuario administrativo.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre Completo</Label>
-                  <Input 
-                    id="name"
-                    value={newUser.name}
-                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                    placeholder="Ej: Juan Pérez"
-                  />
+      <AdminHeader title="Seguridad" subtitle="Gestión de usuarios" />
+      <div className="p-6 flex-1 space-y-6">
+        {/* Búsqueda + Añadir */}
+        <div className="flex justify-between items-center">
+          <Input
+            placeholder="Buscar por nombre o correo..."
+            value={filter}
+            onChange={e => { setFilter(e.target.value); setPage(1); }}
+            className="max-w-md"
+          />
+          <Button onClick={() => { resetForm(); setShowAdd(true); }} className="bg-sanjer-green">
+            <Plus className="w-4 h-4 mr-2"/> Añadir Usuario
+          </Button>
+        </div>
+
+        {/* Tabla paginada */}
+        <Card>
+          <CardHeader><CardTitle>Usuarios</CardTitle></CardHeader>
+          <CardContent>
+            {loading ? (
+              <p>Cargando...</p>
+            ) : (
+              <>
+                <div className="overflow-auto">
+                  <table className="w-full text-sm table-auto">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        {[
+                          "Nombre","Email","Rol","Estado","Último Login","Acciones"
+                        ].map(h =>
+                          <th key={h} className="px-6 py-3 text-left font-medium">{h}</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.map((u, idx) => (
+                        <tr key={u.id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td className="px-6 py-4">{u.name}</td>
+                          <td className="px-6 py-4">{u.email}</td>
+                          <td className="px-6 py-4">{u.role.name}</td>
+                          <td className="px-6 py-4">
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              onClick={() => handleToggleStatus(u)}
+                              className="p-1"
+                            >
+                              {u.status === "Activo"
+                                ? <CheckCircle2 className="text-green-500" />
+                                : <XCircle className="text-red-500" />}
+                            </Button>
+                          </td>
+                          <td className="px-6 py-4">{new Date(u.last_login).toLocaleString()}</td>
+                          <td className="px-6 py-4 space-x-2 text-right">
+                            <Button size="icon" variant="outline" onClick={() => openEdit(u)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button size="icon" variant="outline" onClick={() => handleDelete(u.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Correo Electrónico</Label>
-                  <Input 
-                    id="email"
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                    placeholder="Ej: juan.perez@sanjerfit.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Rol</Label>
-                  <Select 
-                    value={newUser.role} 
-                    onValueChange={(value) => setNewUser({...newUser, role: value})}
+
+                {/* Paginación */}
+                <div className="flex justify-between items-center mt-4">
+                  <Button
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
                   >
-                    <SelectTrigger id="role">
-                      <SelectValue placeholder="Selecciona un rol" />
-                    </SelectTrigger>
+                    Anterior
+                  </Button>
+                  <span>Página {page} de {totalPages}</span>
+                  <Button
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Siguiente
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Add Modal */}
+        <Dialog open={showAdd} onOpenChange={o => !o && setShowAdd(false)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Nuevo Usuario</DialogTitle></DialogHeader>
+            <Tabs defaultValue="info">
+              <TabsList>
+                <TabsTrigger value="info">Info</TabsTrigger>
+                <TabsTrigger value="cred">Credenciales</TabsTrigger>
+              </TabsList>
+              <TabsContent value="info" className="space-y-4">
+                <div><Label>Nombre</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+                <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+                <div>
+                  <Label>Rol</Label>
+                  <Select value={String(form.role_id)} onValueChange={v => setForm({ ...form, role_id: Number(v) })}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Administrador">Administrador</SelectItem>
-                      <SelectItem value="Editor">Editor</SelectItem>
-                      <SelectItem value="Visualizador">Visualizador</SelectItem>
+                      <SelectItem value="1">Administrador</SelectItem>
+                      <SelectItem value="2">Editor</SelectItem>
+                      <SelectItem value="3">Visualizador</SelectItem>
+                      <SelectItem value="4">Colaborador</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              
-              <DialogFooter>
-                <Button 
-                  type="submit" 
-                  onClick={handleAddUser}
-                  disabled={!newUser.name || !newUser.email}
-                  className="bg-sanjer-green hover:bg-green-600"
-                >
-                  Añadir Usuario
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Usuarios</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative w-full overflow-auto">
-              <table className="w-full caption-bottom text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="h-12 px-4 text-left align-middle font-medium">Usuario</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium">Correo</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium">Rol</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium">Estado</th>
-                    <th className="h-12 px-4 text-left align-middle font-medium">Último Login</th>
-                    <th className="h-12 px-4 text-right align-middle font-medium">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id} className="border-b">
-                      <td className="p-4 align-middle">{user.name}</td>
-                      <td className="p-4 align-middle">{user.email}</td>
-                      <td className="p-4 align-middle">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            user.role === "Administrador"
-                              ? "bg-blue-100 text-blue-700"
-                              : user.role === "Editor"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="p-4 align-middle">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            user.status === "Activo"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {user.status}
-                        </span>
-                      </td>
-                      <td className="p-4 align-middle">{user.lastLogin}</td>
-                      <td className="p-4 align-middle text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button size="icon" variant="outline">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="icon" 
-                            variant="outline"
-                            onClick={() => handleChangeStatus(user.id)}
-                          >
-                            <span className="text-xs">
-                              {user.status === "Activo" ? "❌" : "✓"}
-                            </span>
-                          </Button>
-                          <Button 
-                            size="icon" 
-                            variant="outline" 
-                            onClick={() => handleRemoveUser(user.id)}
-                            className="hover:bg-red-100 hover:text-red-500"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              </TabsContent>
+              <TabsContent value="cred" className="space-y-4">
+                <div>
+                  <Label>Contraseña</Label>
+                  <div className="relative">
+                    <Input type={showPassword ? "text" : "password"} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 top-2">
+                      {showPassword ? <EyeOff/> : <Eye/>}
+                    </button>
+                  </div>
+                </div>
+                <div><Label>Confirmar</Label><Input type={showPassword ? "text" : "password"} value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} /></div>
+              </TabsContent>
+            </Tabs>
+            <DialogFooter>
+              <Button onClick={handleAdd} disabled={!form.name||!form.email||!form.password||form.password!==form.confirmPassword}>
+                Crear Usuario
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Modal */}
+        <Dialog open={showEdit} onOpenChange={o => !o && setShowEdit(false)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Editar Usuario</DialogTitle></DialogHeader>
+            <Tabs defaultValue="info">
+              <TabsList>
+                <TabsTrigger value="info">Rol</TabsTrigger>
+                <TabsTrigger value="cred">Contraseña</TabsTrigger>
+              </TabsList>
+              <TabsContent value="info" className="space-y-4">
+                <div>
+                  <Label>Rol</Label>
+                  <Select value={String(form.role_id)} onValueChange={v => setForm({ ...form, role_id: Number(v) })}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Administrador</SelectItem>
+                      <SelectItem value="2">Editor</SelectItem>
+                      <SelectItem value="3">Visualizador</SelectItem>
+                      <SelectItem value="4">Colaborador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TabsContent>
+              <TabsContent value="cred" className="space-y-4">
+                <div>
+                  <Label>Nueva Contraseña</Label>
+                  <div className="relative">
+                    <Input type={showPassword ? "text" : "password"} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2 top-2">
+                      {showPassword ? <EyeOff/> : <Eye/>}
+                    </button>
+                  </div>
+                </div>
+                <div><Label>Confirmar</Label><Input type={showPassword ? "text" : "password"} value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} /></div>
+              </TabsContent>
+            </Tabs>
+            <DialogFooter>
+              <Button onClick={handleEdit}>Guardar Cambios</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Info Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
           <Card>
-            <CardHeader>
-              <CardTitle>Roles y Permisos</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Roles y Permisos</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-1">
-                <h3 className="font-semibold">Administrador</h3>
-                <p className="text-sm text-muted-foreground">
-                  Acceso total al sistema. Puede crear, editar y eliminar usuarios, gestionar todos los módulos.
-                </p>
-              </div>
-              
-              <div className="space-y-1">
-                <h3 className="font-semibold">Editor</h3>
-                <p className="text-sm text-muted-foreground">
-                  Puede registrar colaboradores, gestionar inventario y entregar premios. No puede acceder a reportes avanzados.
-                </p>
-              </div>
-              
-              <div className="space-y-1">
-                <h3 className="font-semibold">Visualizador</h3>
-                <p className="text-sm text-muted-foreground">
-                  Solo puede visualizar información. No puede realizar cambios en el sistema.
-                </p>
-              </div>
+              <div><h3 className="font-semibold">Administrador</h3><p className="text-sm text-muted-foreground">Acceso total al sistema…</p></div>
+              <div><h3 className="font-semibold">Editor</h3><p className="text-sm text-muted-foreground">Gestiona inventario…</p></div>
+              <div><h3 className="font-semibold">Visualizador</h3><p className="text-sm text-muted-foreground">Solo lectura…</p></div>
+              <div><h3 className="font-semibold">Colaborador</h3><p className="text-sm text-muted-foreground">Acceso limitado…</p></div>
             </CardContent>
           </Card>
-          
           <Card>
-            <CardHeader>
-              <CardTitle>Registro de Actividad</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { user: "Admin Principal", action: "Inició sesión", time: "16/05/2025, 10:23 AM" },
-                  { user: "Juan Martínez", action: "Registró entrega de premio", time: "15/05/2025, 03:45 PM" },
-                  { user: "Carlos Dominguez", action: "Actualizó inventario", time: "14/05/2025, 11:12 AM" },
-                  { user: "Admin Principal", action: "Generó reporte de actividad", time: "14/05/2025, 09:30 AM" },
-                  { user: "Sofía Ramírez", action: "Inició sesión", time: "10/05/2025, 02:15 PM" },
-                ].map((item, i) => (
-                  <div key={i} className="text-sm">
-                    <div className="font-medium">{item.user}</div>
-                    <div className="text-muted-foreground flex justify-between">
-                      <span>{item.action}</span>
-                      <span>{item.time}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <CardHeader><CardTitle>Registro de Actividad</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              <p><strong>Admin Principal</strong> inició sesión — 16/05/2025</p>
+              <p><strong>Juan Martínez</strong> registró entrega — 15/05/2025</p>
+              <p><strong>Sofía Ramírez</strong> desactivó usuario — 14/05/2025</p>
             </CardContent>
           </Card>
         </div>
