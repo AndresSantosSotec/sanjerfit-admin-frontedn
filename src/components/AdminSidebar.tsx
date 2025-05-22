@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Award, Package, FileText, Shield, Home } from 'lucide-react';
+import { Users, Shield, Home } from 'lucide-react'; // Eliminados iconos no usados
 import SanjerLogo from './SanjerLogo';
 
 type MenuItem = {
@@ -33,17 +32,20 @@ const AdminSidebar = () => {
         { title: "Gestionar Colaboradores", path: "/usuarios/gestionar" },
       ],
     },
+    /*
     {
       icon: <Award className="h-5 w-5" />,
       title: "Entregar Premios",
       path: "/premios/entregar",
       description: "Registrar entregas",
+      subItems: []
     },
     {
       icon: <Package className="h-5 w-5" />,
       title: "Inventario Premios",
       path: "/premios/inventario",
       description: "Abastecer Premios",
+      subItems: []
     },
     {
       icon: <FileText className="h-5 w-5" />,
@@ -53,8 +55,9 @@ const AdminSidebar = () => {
       subItems: [
         { title: "Reporte de Actividades", path: "/reportes/actividades" },
         { title: "Reporte por Departamentos", path: "/reportes/departamentos" },
-      ],
+      ]
     },
+    */
     {
       icon: <Shield className="h-5 w-5" />,
       title: "Seguridad",
@@ -104,14 +107,14 @@ const AdminSidebar = () => {
                   </Link>
                   <p className="text-xs text-blue-200">{item.description}</p>
                 </div>
-                {item.subItems && (
+                {item.subItems && item.subItems.length > 0 && (
                   <span className="text-xs">
                     {expanded === item.title ? "▲" : "▼"}
                   </span>
                 )}
               </div>
               
-              {expanded === item.title && item.subItems && (
+              {expanded === item.title && item.subItems && item.subItems.length > 0 && (
                 <div className="pl-8 space-y-1">
                   {item.subItems.map((subItem) => (
                     <Link
