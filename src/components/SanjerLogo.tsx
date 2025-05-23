@@ -3,9 +3,15 @@ import React from 'react';
 const SanjerLogo = ({ className = "w-32" }: { className?: string }) => {
   return (
     <div className={`flex items-center ${className}`}>
-      <div className="font-bold text-2xl" style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.3)' }}>
-        <span className="text-white">CooSanjer</span>
-        <span className="text-green-400">FIT</span>
+      <div 
+        className="font-bold text-2xl" 
+        style={{ 
+          textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+          filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.3))'
+        }}
+      >
+        <span className="text-sanjer-blue">CooSanjer</span>
+        <span className="text-green-500">FIT</span>
       </div>
       <div className="ml-2">
         <svg 
@@ -14,13 +20,15 @@ const SanjerLogo = ({ className = "w-32" }: { className?: string }) => {
           viewBox="0 0 100 100" 
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
-          style={{ filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.3))' }}
+          style={{ 
+            filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.5))'
+          }}
         >
           <circle 
             cx="50" 
             cy="50" 
             r="45" 
-            stroke="white" 
+            stroke="#1e40af" 
             strokeWidth="5" 
             fill="none" 
           />
@@ -32,7 +40,7 @@ const SanjerLogo = ({ className = "w-32" }: { className?: string }) => {
           />
           <path 
             d="M50 20 L 50 80" 
-            stroke="white" 
+            stroke="#1e40af" 
             strokeWidth="3" 
             strokeDasharray="5,5" 
           />
