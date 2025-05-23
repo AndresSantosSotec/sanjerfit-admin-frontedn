@@ -27,7 +27,7 @@ const AdminSidebar = () => {
     {
       icon: <Users className="h-5 w-5" />,
       title: "Usuarios",
-      path: "/usuarios/registrar", // Redirigir al primer subitem por defecto
+      path: "/usuarios/registrar",
       description: "Registrar Colaboradores | Perfiles",
       clickable: false,
       subItems: [
