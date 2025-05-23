@@ -60,12 +60,13 @@ const UserRegistration = () => {
     if (!nm) return
     let normalized = nm
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, '.')
-      .replace(/[^a-z0-9.]/g, '')
-      .replace(/\.{2,}/g, '.')
-      .replace(/^\.+|\.+$/g, '')
-    const email = `${normalized}@sanjerfit.com`
+      .replace(/[\u0300-\u036f]/g, '')  // remover acentos
+      .replace(/\s+/g, '.')             // espacios a puntos
+      .replace(/[^a-z0-9.]/g, '')       // solo letras, números y puntos
+      .replace(/\.{2,}/g, '.')          // no puntos consecutivos
+      .replace(/^\.+|\.+$/g, '')        // no puntos al inicio/final
+
+    const email = `${normalized}@coosanjer.com.gt`  // cambio de dominio
     const digits = Math.floor(1000 + Math.random() * 9000)
     const pwd = `${normalized.substring(0, 3)}${digits}`
 
