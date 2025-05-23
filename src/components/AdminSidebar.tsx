@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Shield, Home } from 'lucide-react'; // Eliminados iconos no usados
+import { Users, Shield, Home } from 'lucide-react';
 import SanjerLogo from './SanjerLogo';
 
 type MenuItem = {
@@ -8,6 +8,7 @@ type MenuItem = {
   title: string;
   path: string;
   description: string;
+  clickable?: boolean;
   subItems?: { title: string; path: string }[];
 };
 
@@ -21,48 +22,25 @@ const AdminSidebar = () => {
       title: "Dashboard",
       path: "/dashboard",
       description: "Panel principal",
+      clickable: true,
     },
     {
       icon: <Users className="h-5 w-5" />,
       title: "Usuarios",
-      path: "/usuarios",
+      path: "/usuarios/registrar", // Redirigir al primer subitem por defecto
       description: "Registrar Colaboradores | Perfiles",
+      clickable: false,
       subItems: [
         { title: "Registrar Colaborador", path: "/usuarios/registrar" },
         { title: "Gestionar Colaboradores", path: "/usuarios/gestionar" },
       ],
     },
-    /*
-    {
-      icon: <Award className="h-5 w-5" />,
-      title: "Entregar Premios",
-      path: "/premios/entregar",
-      description: "Registrar entregas",
-      subItems: []
-    },
-    {
-      icon: <Package className="h-5 w-5" />,
-      title: "Inventario Premios",
-      path: "/premios/inventario",
-      description: "Abastecer Premios",
-      subItems: []
-    },
-    {
-      icon: <FileText className="h-5 w-5" />,
-      title: "Reportes",
-      path: "/reportes",
-      description: "Reportes Avances",
-      subItems: [
-        { title: "Reporte de Actividades", path: "/reportes/actividades" },
-        { title: "Reporte por Departamentos", path: "/reportes/departamentos" },
-      ]
-    },
-    */
     {
       icon: <Shield className="h-5 w-5" />,
       title: "Seguridad",
       path: "/seguridad",
       description: "Gestión de accesos",
+      clickable: true,
     },
   ];
 
@@ -93,18 +71,22 @@ const AdminSidebar = () => {
           {menuItems.map((item) => (
             <div key={item.title} className="space-y-1">
               <div 
-                className={`flex items-center p-2 rounded-md cursor-pointer transition-colors ${
+                className={`flex items-center p-2 rounded-md transition-colors ${
                   isActive(item.path) ? "bg-sanjer-blue text-white bg-opacity-80" : "hover:bg-blue-800"
-                }`}
+                } ${item.subItems ? "cursor-pointer" : ""}`}
                 onClick={() => item.subItems && toggleExpand(item.title)}
               >
                 <div className="mr-2 text-sanjer-green">
                   {item.icon}
                 </div>
                 <div className="flex-1">
-                  <Link to={item.path} className="font-medium text-sm">
-                    {item.title}
-                  </Link>
+                  {item.clickable ? (
+                    <Link to={item.path} className="font-medium text-sm">
+                      {item.title}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-sm">{item.title}</span>
+                  )}
                   <p className="text-xs text-blue-200">{item.description}</p>
                 </div>
                 {item.subItems && item.subItems.length > 0 && (
