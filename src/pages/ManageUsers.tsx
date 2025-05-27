@@ -547,14 +547,6 @@ export const ManageUsers: React.FC = () => {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="flex items-center gap-2"
-                >
-                  <Filter className="h-4 w-4" />
-                  Filtros Avanzados
-                </Button>
                 <Button onClick={openAddModal} className="bg-sanjer-green hover:bg-green-600">
                   <Plus className="h-4 w-4 mr-2" /> Añadir
                 </Button>
