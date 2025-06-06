@@ -18,4 +18,8 @@ export interface Collaborator {
   bmi: string;
   coinFits: number;
   lastActive: string;
+  imcObjective?: number;
+  weightObjective?: number;
+  password?: string;
+  passwordConfirmation?: string;
 }
