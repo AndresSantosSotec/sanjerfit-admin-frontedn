@@ -56,6 +56,8 @@ interface BackendColaborator {
   nivel_asignado: string;
   peso: number;
   altura: number;
+  IMC_objetivo?: number;
+  peso_objetivo?: number;
   tipo_sangre: string;
   alergias: string;
   padecimientos: string;
@@ -163,6 +165,8 @@ export const ManageUsers: React.FC = () => {
             occupation: (col as any).ocupacion ?? '',
             weight: col.peso,
             height: col.altura,
+            imcObjective: col.IMC_objetivo ?? 24,
+            weightObjective: col.peso_objetivo ?? 0,
             bloodType: col.tipo_sangre,
             allergies: col.alergias,
             medicalConditions: col.padecimientos,
@@ -315,6 +319,7 @@ export const ManageUsers: React.FC = () => {
           area: c.area,
           peso: c.weight,
           altura: c.height,
+          IMC_objetivo: c.imcObjective,
           tipo_sangre: c.bloodType,
           alergias: c.allergies,
           padecimientos: c.medicalConditions,
@@ -346,6 +351,8 @@ export const ManageUsers: React.FC = () => {
           occupation: (data as any).ocupacion ?? '',
           weight: data.peso,
           height: data.altura,
+          imcObjective: data.IMC_objetivo ?? 24,
+          weightObjective: data.peso_objetivo ?? 0,
           bloodType: data.tipo_sangre,
           allergies: data.alergias,
           medicalConditions: data.padecimientos,
@@ -371,6 +378,7 @@ export const ManageUsers: React.FC = () => {
           area: c.area,
           peso: c.weight,
           altura: c.height,
+          IMC_objetivo: c.imcObjective,
           tipo_sangre: c.bloodType,
           alergias: c.allergies,
           padecimientos: c.medicalConditions,
@@ -401,6 +409,8 @@ export const ManageUsers: React.FC = () => {
           occupation: (data as any).ocupacion ?? '',
           weight: data.peso,
           height: data.altura,
+          imcObjective: data.IMC_objetivo ?? 24,
+          weightObjective: data.peso_objetivo ?? 0,
           bloodType: data.tipo_sangre,
           allergies: data.alergias,
           medicalConditions: data.padecimientos,

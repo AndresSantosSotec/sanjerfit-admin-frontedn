@@ -56,7 +56,11 @@ export const CollaboratorModal = ({
     medicalConditions: '',
     bmi: '',
     coinFits: 0,
-    lastActive: new Date().toISOString().split('T')[0]
+    lastActive: new Date().toISOString().split('T')[0],
+    imcObjective: 24,
+    weightObjective: 0,
+    password: '',
+    passwordConfirmation: ''
   });
   
   const [photoPreview, setPhotoPreview] = useState<string>('');
@@ -64,7 +68,11 @@ export const CollaboratorModal = ({
   
   useEffect(() => {
     if (collaborator) {
-      setFormData(collaborator);
+      setFormData({
+        ...collaborator,
+        password: '',
+        passwordConfirmation: ''
+      });
       setPhotoPreview(collaborator.photo);
     } else {
       setFormData({
@@ -85,7 +93,11 @@ export const CollaboratorModal = ({
         medicalConditions: '',
         bmi: '',
         coinFits: 0,
-        lastActive: new Date().toISOString().split('T')[0]
+        lastActive: new Date().toISOString().split('T')[0],
+        imcObjective: 24,
+        weightObjective: 0,
+        password: '',
+        passwordConfirmation: ''
       });
       setPhotoPreview('');
     }
@@ -94,22 +106,26 @@ export const CollaboratorModal = ({
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
-    
-    if (type === 'number') {
-      setFormData({ ...formData, [name]: parseFloat(value) || 0 });
-      
-      // Calculate BMI if weight and height are set
-      if ((name === 'weight' || name === 'height') && formData.weight && formData.height) {
-        const weight = name === 'weight' ? parseFloat(value) : formData.weight;
-        const height = name === 'height' ? parseFloat(value) / 100 : formData.height / 100; // cm to m
-        if (weight > 0 && height > 0) {
-          const bmi = (weight / (height * height)).toFixed(1);
-          setFormData(prev => ({ ...prev, bmi }));
+
+    setFormData(prev => {
+      const updated: any = { ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value };
+
+      // Recalculate BMI when weight or height changes
+      if ((name === 'weight' || name === 'height') && updated.weight && updated.height) {
+        const h = updated.height / 100;
+        if (h > 0) {
+          updated.bmi = (updated.weight / (h * h)).toFixed(1);
         }
       }
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+
+      // Recalculate weight objective when IMC or height changes
+      if ((name === 'imcObjective' || name === 'height') && updated.height && updated.imcObjective) {
+        const h = updated.height / 100;
+        updated.weightObjective = parseFloat((updated.imcObjective * h * h).toFixed(2));
+      }
+
+      return updated;
+    });
   };
   
   const handleSelectChange = (name: string, value: string) => {
@@ -330,6 +346,33 @@ export const CollaboratorModal = ({
                     className="bg-gray-50"
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="imcObjective">IMC Objetivo:</Label>
+                  <Input
+                    id="imcObjective"
+                    name="imcObjective"
+                    type="number"
+                    step="0.1"
+                    min="18"
+                    max="40"
+                    value={formData.imcObjective ?? 24}
+                    onChange={handleChange}
+                    placeholder="24"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="weightObjective">Peso Objetivo (kg):</Label>
+                  <Input
+                    id="weightObjective"
+                    name="weightObjective"
+                    type="number"
+                    value={formData.weightObjective ?? ''}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="bloodType">Tipo de Sangre:</Label>
@@ -419,6 +462,29 @@ export const CollaboratorModal = ({
                 </div>
                 
                 <div className="space-y-6 mt-4">
+                  {!isEditMode && (
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Contraseña:</Label>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required={!isEditMode}
+                      />
+                      <Label htmlFor="passwordConfirmation" className="pt-2">Confirmar Contraseña:</Label>
+                      <Input
+                        id="passwordConfirmation"
+                        name="passwordConfirmation"
+                        type="password"
+                        value={formData.passwordConfirmation}
+                        onChange={handleChange}
+                        required={!isEditMode}
+                      />
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="coinFits">CoinFits Actuales:</Label>
                     <Input
