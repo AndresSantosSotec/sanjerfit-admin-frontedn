@@ -1,101 +1,146 @@
-import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import React, { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useActivities, Activity } from '@/hooks/useActivities';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Activity } from '@/hooks/useActivities';
+import { useToast } from '@/hooks/use-toast';
+import ActivityDetailModal from './ActivityDetailModal';
 
-interface Props {
-  open: boolean;
-  onClose: () => void;
-  activity: Activity | null;
-  onValidate: (id: number, ok: boolean) => void;
-}
+export default function ActivityTable() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [userFilter, setUserFilter] = useState('');
+  const [selected, setSelected] = useState<Activity | null>(null);
+  const { toast } = useToast();
 
-export default function ActivityDetailModal({ open, onClose, activity, onValidate }: Props) {
-  if (!activity) return null;
+  const userId = userFilter ? parseInt(userFilter) : undefined;
+  const { data, total, loading, saving, validateActivity } = useActivities(page, userId, search);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, userFilter]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-6">
+        <Loader2 className="h-6 w-6 animate-spin text-sanjer-blue" />
+      </div>
+    );
+  }
+
+  const totalPages = Math.ceil(total / 15);
+
+  const handleValidate = async (id: number, ok: boolean) => {
+    try {
+      await validateActivity(id, ok);
+      toast({
+        title: ok ? 'Actividad validada' : 'Actividad rechazada',
+      });
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar la actividad',
+        variant: 'destructive',
+      });
+    } finally {
+      setSelected(null);
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Detalle de Actividad</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm">
-              <strong>Usuario:</strong> {activity.user.name}
-            </p>
-            <p className="text-sm">
-              <strong>Tipo:</strong> {activity.exercise_type}
-            </p>
-            <p className="text-sm">
-              <strong>Duración:</strong> {activity.duration} {activity.duration_unit}
-            </p>
-            <p className="text-sm">
-              <strong>Fecha:</strong>{' '}
-              {new Date(activity.created_at).toLocaleString()}
-            </p>
-            {activity.location_lat && activity.location_lng && (
-              <p className="text-sm">
-                <strong>Ubicación:</strong> {activity.location_lat},{' '}
-                {activity.location_lng}
-              </p>
-            )}
-            {activity.notes && (
-              <p className="text-sm">
-                <strong>Notas:</strong> {activity.notes}
-              </p>
-            )}
-          </div>
-
-          {activity.selfie_url && (
-            <img
-              src={activity.selfie_url}
-              alt="Selfie"
-              className="max-h-64 w-full object-contain rounded"
-            />
-          )}
-          {activity.device_image_url && (
-            <img
-              src={activity.device_image_url}
-              alt="Dispositivo"
-              className="max-h-64 w-full object-contain rounded"
-            />
-          )}
-          {activity.attachments_url && activity.attachments_url.length > 0 && (
-            <div className="space-y-2">
-              <p className="font-medium">Adjuntos:</p>
-              <ul className="list-disc list-inside text-sm">
-                {activity.attachments_url.map(url => (
-                  <li key={url}>
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sanjer-blue underline"
-                    >
-                      {url.split('/').pop()}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+    <>
+      {/* filtros */}
+      <div className="flex flex-wrap items-end gap-4 mb-4">
+        <div className="space-y-1">
+          <Label htmlFor="search">Buscar</Label>
+          <Input
+            id="search"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Ejercicio o notas"
+          />
         </div>
+        <div className="space-y-1">
+          <Label htmlFor="userId">Usuario ID</Label>
+          <Input
+            id="userId"
+            type="number"
+            value={userFilter}
+            onChange={e => setUserFilter(e.target.value)}
+            placeholder="Todos"
+          />
+        </div>
+      </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="destructive" onClick={() => onValidate(activity.id, false)}>
-            Rechazar
-          </Button>
-          <Button onClick={() => onValidate(activity.id, true)}>Validar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <div className="relative w-full overflow-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b font-medium">
+              <th className="px-4 py-2 text-left">Usuario</th>
+              <th className="px-4 py-2 text-left">Ejercicio</th>
+              <th className="px-4 py-2 text-left">Duración</th>
+              <th className="px-4 py-2 text-left">Kcal</th>
+              <th className="px-4 py-2 text-left">Fecha</th>
+              <th className="px-4 py-2 text-left">Estado</th>
+              <th className="px-4 py-2 text-left">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map(a => (
+              <tr key={a.id} className="border-b">
+                <td className="px-4 py-2">{a.user.name}</td>
+                <td className="px-4 py-2">{a.exercise_type}</td>
+                <td className="px-4 py-2">
+                  {a.duration} {a.duration_unit}
+                </td>
+                <td className="px-4 py-2">{a.calories}</td>
+                <td className="px-4 py-2">{new Date(a.created_at).toLocaleString()}</td>
+                <td className="px-4 py-2 capitalize">{a.status ?? 'pendiente'}</td>
+                <td className="px-4 py-2 space-x-2">
+                  <Button size="sm" variant="secondary" onClick={() => setSelected(a)}>
+                    Ver
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleValidate(a.id, true)}
+                    disabled={saving || a.status === 'aprobada'}
+                  >
+                    Validar
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* paginador */}
+      <div className="flex justify-end items-center gap-2 mt-4">
+        <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+          Anterior
+        </Button>
+        <span className="text-sm">
+          Página {page} de {totalPages}
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page >= totalPages}
+          onClick={() => setPage(p => p + 1)}
+        >
+          Siguiente
+        </Button>
+      </div>
+
+      <ActivityDetailModal
+        activity={selected}
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        onValidate={handleValidate}
+        saving={saving}
+      />
+    </>
   );
 }

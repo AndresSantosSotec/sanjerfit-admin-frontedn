@@ -36,6 +36,7 @@ export function useActivities(
   const [data, setData] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -43,12 +44,10 @@ export function useActivities(
     const query = new URLSearchParams();
     query.set('page', String(page));
     if (userId) query.set('user_id', String(userId));
-    if (search) query.set('search', search);
-
-    const url = `/webadmin/activities?${query.toString()}`;
+    if (search)  query.set('search', search);
 
     api
-      .get<Paginated<Activity>>(url)
+      .get<Paginated<Activity>>(`/webadmin/activities?${query.toString()}`)
       .then(res => {
         setData(res.data.data);
         setTotal(res.data.total);
@@ -56,6 +55,21 @@ export function useActivities(
       .finally(() => setLoading(false));
   }, [page, userId, search]);
 
-  return { data, total, loading };
-}
+  const validateActivity = async (id: number, ok: boolean) => {
+    setSaving(true);
+    try {
+      await api.patch(`/webadmin/activities/${id}`, {
+        status: ok ? 'aprobada' : 'rechazada',
+      });
+      setData(prev =>
+        prev.map(a =>
+          a.id === id ? { ...a, status: ok ? 'aprobada' : 'rechazada' } : a
+        )
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
+  return { data, total, loading, saving, validateActivity };
+}
