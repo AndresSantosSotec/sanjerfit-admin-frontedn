@@ -48,6 +48,9 @@ export const CollaboratorView = ({ isOpen, onClose, collaborator }: Collaborator
             
             <div className="flex-1">
               <h3 className="text-xl font-semibold">{collaborator.name}</h3>
+              {collaborator.nickname && (
+                <p className="text-sm text-gray-500">Alias: {collaborator.nickname}</p>
+              )}
               <p className="text-gray-500">{collaborator.email}</p>
               <p className="text-sm text-gray-500">{collaborator.occupation}</p>
               

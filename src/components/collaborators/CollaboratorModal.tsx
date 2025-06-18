@@ -41,6 +41,7 @@ export const CollaboratorModal = ({
   const [formData, setFormData] = useState<Collaborator>({
     id: '',
     name: '',
+    nickname: '',
     email: '',
     phone: '',
     area: '',
@@ -70,6 +71,7 @@ export const CollaboratorModal = ({
     if (collaborator) {
       setFormData({
         ...collaborator,
+        nickname: collaborator.nickname || '',
         password: '',
         passwordConfirmation: ''
       });
@@ -78,6 +80,7 @@ export const CollaboratorModal = ({
       setFormData({
         id: '',
         name: '',
+        nickname: '',
         email: '',
         phone: '',
         area: '',
@@ -248,7 +251,18 @@ export const CollaboratorModal = ({
                     </div>
                   </div>
                 </div>
-                
+
+                <div className="space-y-2">
+                  <Label htmlFor="nickname">Nickname:</Label>
+                  <Input
+                    id="nickname"
+                    name="nickname"
+                    value={formData.nickname || ''}
+                    onChange={handleChange}
+                    placeholder="Alias opcional"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Correo Electrónico:</Label>
                   <Input

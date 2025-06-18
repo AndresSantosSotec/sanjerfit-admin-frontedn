@@ -51,6 +51,7 @@ import { Collaborator } from '@/types/collaborator';
 interface BackendColaborator {
   id: number;
   nombre: string;
+  nickname?: string;
   telefono: string;
   area: string;
   nivel_asignado: string;
@@ -155,6 +156,7 @@ export const ManageUsers: React.FC = () => {
           return {
             id: String(col.id),
             name: col.nombre,
+            nickname: (col as any).nickname ?? '',
             email: col.user.email,
             phone: col.telefono,
             area: col.area,
@@ -312,6 +314,7 @@ export const ManageUsers: React.FC = () => {
         console.debug(`✏️ Actualizando ${c.id}`, c);
         const payload = {
           nombre: c.name,
+          nickname: c.nickname,
           sexo: (c as any).sexo,
           telefono: c.phone,
           direccion: c.address,
@@ -341,6 +344,7 @@ export const ManageUsers: React.FC = () => {
         const updated: Collaborator = {
           id: String(data.id),
           name: data.nombre,
+          nickname: (data as any).nickname ?? '',
           email: data.user.email,
           phone: data.telefono,
           area: data.area,
@@ -368,6 +372,7 @@ export const ManageUsers: React.FC = () => {
         console.debug('➕ Añadiendo…', c);
         const payload = {
           nombre: c.name,
+          nickname: c.nickname,
           email: c.email,
           password: (c as any).password,
           password_confirmation: (c as any).passwordConfirmation,
@@ -399,6 +404,7 @@ export const ManageUsers: React.FC = () => {
         const added: Collaborator = {
           id: String(data.id),
           name: data.nombre,
+          nickname: (data as any).nickname ?? '',
           email: data.user.email,
           phone: data.telefono,
           area: data.area,
@@ -755,6 +761,9 @@ export const ManageUsers: React.FC = () => {
                           </Avatar>
                           <div>
                             <div className="font-medium">{c.name}</div>
+                            {c.nickname && (
+                              <div className="text-xs text-gray-500 italic">{c.nickname}</div>
+                            )}
                             <div className="text-sm text-gray-500">{c.phone}</div>
                           </div>
                         </div>
