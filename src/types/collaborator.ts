@@ -2,6 +2,8 @@
 export interface Collaborator {
   id: string;
   name: string;
+  /** Alias visible en rankings */
+  nickname?: string;
   email: string;
   phone: string;
   area: string;

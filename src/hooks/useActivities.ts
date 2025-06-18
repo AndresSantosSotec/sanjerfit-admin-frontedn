@@ -8,6 +8,18 @@ export interface Activity {
   duration: number;
   duration_unit: string;
   calories: number;
+  /** URL de selfie o evidencia */
+  selfie_url?: string | null;
+  /** Imagen del dispositivo (reloj, app, etc.) */
+  device_image_url?: string | null;
+  /** Archivos adjuntos */
+  attachments_url?: string[] | null;
+  /** Notas opcionales */
+  notes?: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  /** Estado de validación: 'pendiente', 'aprobada', 'rechazada' */
+  status?: string;
   created_at: string;
 }
 
@@ -16,29 +28,51 @@ interface Paginated<T> {
   total: number;
 }
 
-export function useActivities(page = 1, userId?: number) {
-  const [data, setData]   = useState<Activity[]>([]);
+export function useActivities(
+  page = 1,
+  userId?: number,
+  search?: string
+) {
+  const [data, setData] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setLoading(true);
 
-    const url = userId
-      ? `/webadmin/users/${userId}/activities?page=${page}`
-      : `/webadmin/activities?page=${page}`;
+    const query = new URLSearchParams();
+    query.set('page', String(page));
+    if (userId) query.set('user_id', String(userId));
+    if (search) query.set('search', search);
 
-    api.get<Paginated<Activity>>(url)
-       .then(res => {
-         setData(res.data.data);
-         setTotal(res.data.total);
-       })
-       .finally(() => setLoading(false));
-  }, [page, userId]);
+    const url = `/webadmin/activities?${query.toString()}`;
 
-  return { data, total, loading, page, setPage: (p: number) => setPageState(p) };
-}
-function setPageState(p: number) {
-    throw new Error('Function not implemented.');
+    api
+      .get<Paginated<Activity>>(url)
+      .then(res => {
+        setData(res.data.data);
+        setTotal(res.data.total);
+      })
+      .finally(() => setLoading(false));
+  }, [page, userId, search]);
+
+  const validateActivity = async (id: number, ok: boolean) => {
+    setSaving(true);
+    try {
+      await api.patch(`/webadmin/activities/${id}`, {
+        status: ok ? 'aprobada' : 'rechazada',
+      });
+      setData(prev =>
+        prev.map(a =>
+          a.id === id ? { ...a, status: ok ? 'aprobada' : 'rechazada' } : a,
+        ),
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return { data, total, loading, saving, validateActivity };
 }
 
