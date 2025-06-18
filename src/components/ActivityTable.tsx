@@ -1,10 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useActivities } from '@/hooks/useActivities';
+import { useActivities, Activity } from '@/hooks/useActivities';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import ActivityDetailModal from './ActivityDetailModal';
 
 export default function ActivityTable() {
   const [page, setPage] = useState(1);
-  const { data, total, loading } = useActivities(page);
+  const [search, setSearch] = useState('');
+  const [userFilter, setUserFilter] = useState('');
+  const [selected, setSelected] = useState<Activity | null>(null);
+  const { toast } = useToast();
+
+  const userId = userFilter ? parseInt(userFilter) : undefined;
+  const { data, total, loading } = useActivities(page, userId, search);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, userFilter]);
 
   if (loading) {
     return (
@@ -14,8 +29,40 @@ export default function ActivityTable() {
     );
   }
 
+  const totalPages = Math.ceil(total / 15);
+
+  const handleValidate = (id: number, ok: boolean) => {
+    toast({
+      title: ok ? 'Actividad validada' : 'Actividad rechazada',
+    });
+    setSelected(null);
+  };
+
   return (
     <>
+      {/* filtros */}
+      <div className="flex flex-wrap items-end gap-4 mb-4">
+        <div className="space-y-1">
+          <Label htmlFor="search">Buscar</Label>
+          <Input
+            id="search"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Ejercicio o notas"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="userId">Usuario ID</Label>
+          <Input
+            id="userId"
+            type="number"
+            value={userFilter}
+            onChange={e => setUserFilter(e.target.value)}
+            placeholder="Todos"
+          />
+        </div>
+      </div>
+
       <div className="relative w-full overflow-auto">
         <table className="w-full text-sm">
           <thead>
@@ -25,6 +72,7 @@ export default function ActivityTable() {
               <th className="px-4 py-2 text-left">Duración</th>
               <th className="px-4 py-2 text-left">Kcal</th>
               <th className="px-4 py-2 text-left">Fecha</th>
+              <th className="px-4 py-2 text-left">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -39,30 +87,57 @@ export default function ActivityTable() {
                 <td className="px-4 py-2">
                   {new Date(a.created_at).toLocaleString()}
                 </td>
+                <td className="px-4 py-2 space-x-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setSelected(a)}
+                  >
+                    Ver
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleValidate(a.id, true)}
+                  >
+                    Validar
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* paginador simple */}
+      {/* paginador mejorado */}
       <div className="flex justify-end items-center gap-2 mt-4">
-        <button
-          className="px-2 py-1 bg-gray-200 rounded disabled:opacity-40"
+        <Button
+          size="sm"
+          variant="outline"
           disabled={page === 1}
           onClick={() => setPage(p => p - 1)}
         >
-          ◀
-        </button>
-        <span>{page}</span>
-        <button
-          className="px-2 py-1 bg-gray-200 rounded disabled:opacity-40"
-          disabled={page * 15 >= total}
+          Anterior
+        </Button>
+        <span className="text-sm">
+          Página {page} de {totalPages}
+        </span>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={page >= totalPages}
           onClick={() => setPage(p => p + 1)}
         >
-          ▶
-        </button>
+          Siguiente
+        </Button>
       </div>
+
+      <ActivityDetailModal
+        activity={selected}
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        onValidate={handleValidate}
+      />
     </>
   );
 }
