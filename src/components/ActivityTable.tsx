@@ -15,7 +15,7 @@ export default function ActivityTable() {
   const { toast } = useToast();
 
   const userId = userFilter ? parseInt(userFilter) : undefined;
-  const { data, total, loading, saving, validateActivity } = useActivities(page, userId, search);
+  const { data, total, loading } = useActivities(page, userId, search);
 
   useEffect(() => {
     setPage(1);
@@ -31,21 +31,11 @@ export default function ActivityTable() {
 
   const totalPages = Math.ceil(total / 15);
 
-  const handleValidate = async (id: number, ok: boolean) => {
-    try {
-      await validateActivity(id, ok);
-      toast({
-        title: ok ? 'Actividad validada' : 'Actividad rechazada',
-      });
-    } catch (err) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo actualizar la actividad',
-        variant: 'destructive',
-      });
-    } finally {
-      setSelected(null);
-    }
+  const handleValidate = (id: number, ok: boolean) => {
+    toast({
+      title: ok ? 'Actividad validada' : 'Actividad rechazada',
+    });
+    setSelected(null);
   };
 
   return (
@@ -82,7 +72,6 @@ export default function ActivityTable() {
               <th className="px-4 py-2 text-left">Duración</th>
               <th className="px-4 py-2 text-left">Kcal</th>
               <th className="px-4 py-2 text-left">Fecha</th>
-              <th className="px-4 py-2 text-left">Estado</th>
               <th className="px-4 py-2 text-left">Acciones</th>
             </tr>
           </thead>
@@ -98,9 +87,6 @@ export default function ActivityTable() {
                 <td className="px-4 py-2">
                   {new Date(a.created_at).toLocaleString()}
                 </td>
-                <td className="px-4 py-2 capitalize">
-                  {a.status ?? 'pendiente'}
-                </td>
                 <td className="px-4 py-2 space-x-2">
                   <Button
                     size="sm"
@@ -113,7 +99,6 @@ export default function ActivityTable() {
                     size="sm"
                     variant="outline"
                     onClick={() => handleValidate(a.id, true)}
-                    disabled={saving}
                   >
                     Validar
                   </Button>
@@ -152,7 +137,6 @@ export default function ActivityTable() {
         open={!!selected}
         onClose={() => setSelected(null)}
         onValidate={handleValidate}
-        saving={saving}
       />
     </>
   );
