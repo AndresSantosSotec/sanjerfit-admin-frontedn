@@ -27,3 +27,5 @@ dist-ssr
 
 # Coverage directory used by tools like istanbul
 coverage
+
+.env
