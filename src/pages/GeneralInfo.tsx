@@ -29,6 +29,7 @@ const GeneralInfoPage: React.FC = () => {
     imagePath: '',
   });
 
+
   const fetchInfo = () => {
     setLoading(true);
     api
@@ -43,7 +44,9 @@ const GeneralInfoPage: React.FC = () => {
 
   const openCreate = () => {
     setEditing(null);
+
     setForm({ title: '', content: '', category: '', imagePath: '' });
+
     setShowDialog(true);
   };
 
@@ -53,7 +56,9 @@ const GeneralInfoPage: React.FC = () => {
       title: info.title,
       content: info.content,
       category: info.category || '',
+
       imagePath: info.image_path || '',
+
     });
     setShowDialog(true);
   };
@@ -65,6 +70,7 @@ const GeneralInfoPage: React.FC = () => {
       content: form.content,
       category: form.category || null,
       image_path: form.imagePath || null,
+
     };
     const req = editing
       ? api.put<GeneralInfo>(`/webadmin/info/${editing.id}`, payload)
@@ -113,6 +119,7 @@ const GeneralInfoPage: React.FC = () => {
                     <th className="p-2">Contenido</th>
                     <th className="p-2">Categoría</th>
                     <th className="p-2">Imagen</th>
+
                     <th className="p-2"></th>
                   </tr>
                 </thead>
@@ -122,6 +129,7 @@ const GeneralInfoPage: React.FC = () => {
                       <td className="p-2 font-medium">{info.title}</td>
                       <td className="p-2">{info.content}</td>
                       <td className="p-2">{info.category || '-'}</td>
+
                       <td className="p-2">
                         {info.image_path ? (
                           <img
@@ -133,6 +141,7 @@ const GeneralInfoPage: React.FC = () => {
                           '-'
                         )}
                       </td>
+
                       <td className="p-2 space-x-2">
                         <Button
                           size="icon"
@@ -180,11 +189,13 @@ const GeneralInfoPage: React.FC = () => {
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               />
+
               <Input
                 placeholder="URL de la imagen (opcional)"
                 value={form.imagePath}
                 onChange={(e) => setForm({ ...form, imagePath: e.target.value })}
               />
+
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowDialog(false)}>
