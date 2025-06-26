@@ -22,13 +22,19 @@ const GeneralInfoPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editing, setEditing] = useState<GeneralInfo | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    title: string;
+    content: string;
+    category: string;
+    file: File | null;
+    filePreview: string;
+  }>({
     title: '',
     content: '',
     category: '',
-    imagePath: '',
+    file: null,
+    filePreview: '',
   });
-
 
   const fetchInfo = () => {
     setLoading(true);
@@ -44,9 +50,7 @@ const GeneralInfoPage: React.FC = () => {
 
   const openCreate = () => {
     setEditing(null);
-
-    setForm({ title: '', content: '', category: '', imagePath: '' });
-
+    setForm({ title: '', content: '', category: '', file: null, filePreview: '' });
     setShowDialog(true);
   };
 
@@ -56,25 +60,33 @@ const GeneralInfoPage: React.FC = () => {
       title: info.title,
       content: info.content,
       category: info.category || '',
-
-      imagePath: info.image_path || '',
-
+      file: null,
+      filePreview: info.image_path || '',
     });
     setShowDialog(true);
   };
 
   const handleSubmit = () => {
     if (!form.title || !form.content) return;
-    const payload = {
-      title: form.title,
-      content: form.content,
-      category: form.category || null,
-      image_path: form.imagePath || null,
 
-    };
-    const req = editing
-      ? api.put<GeneralInfo>(`/webadmin/info/${editing.id}`, payload)
-      : api.post<GeneralInfo>('/webadmin/info', payload);
+    const fd = new FormData();
+    fd.append('title', form.title);
+    fd.append('content', form.content);
+    if (form.category) fd.append('category', form.category);
+    if (form.file) fd.append('image_path', form.file);
+
+    let req: Promise<any>;
+    if (editing) {
+      fd.append('_method', 'PUT');
+      req = api.post(`/webadmin/info/${editing.id}`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    } else {
+      req = api.post('/webadmin/info', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
+
     req.then((r) => {
       if (editing) {
         setInfos(infos.map((i) => (i.id === editing.id ? r.data : i)));
@@ -85,6 +97,12 @@ const GeneralInfoPage: React.FC = () => {
       }
       setShowDialog(false);
     });
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setForm({ ...form, file, filePreview: URL.createObjectURL(file) });
   };
 
   const handleDelete = (id: number) => {
@@ -119,7 +137,6 @@ const GeneralInfoPage: React.FC = () => {
                     <th className="p-2">Contenido</th>
                     <th className="p-2">Categoría</th>
                     <th className="p-2">Imagen</th>
-
                     <th className="p-2"></th>
                   </tr>
                 </thead>
@@ -129,19 +146,25 @@ const GeneralInfoPage: React.FC = () => {
                       <td className="p-2 font-medium">{info.title}</td>
                       <td className="p-2">{info.content}</td>
                       <td className="p-2">{info.category || '-'}</td>
-
                       <td className="p-2">
                         {info.image_path ? (
-                          <img
-                            src={info.image_path}
-                            alt="imagen"
-                            className="w-12 h-12 object-cover"
-                          />
+                          /(mp4|webm|ogg)$/i.test(info.image_path) ? (
+                            <video
+                              src={info.image_path}
+                              className="w-16 h-10 object-cover"
+                              controls
+                            />
+                          ) : (
+                            <img
+                              src={info.image_path}
+                              alt="recurso"
+                              className="w-12 h-12 object-cover"
+                            />
+                          )
                         ) : (
                           '-'
                         )}
                       </td>
-
                       <td className="p-2 space-x-2">
                         <Button
                           size="icon"
@@ -189,13 +212,24 @@ const GeneralInfoPage: React.FC = () => {
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               />
-
-              <Input
-                placeholder="URL de la imagen (opcional)"
-                value={form.imagePath}
-                onChange={(e) => setForm({ ...form, imagePath: e.target.value })}
-              />
-
+              <div className="space-y-2">
+                {form.filePreview && (
+                  /(mp4|webm|ogg)$/i.test(form.filePreview) ? (
+                    <video
+                      src={form.filePreview}
+                      className="w-full max-h-40 object-cover"
+                      controls
+                    />
+                  ) : (
+                    <img
+                      src={form.filePreview}
+                      alt="preview"
+                      className="w-full h-32 object-cover rounded"
+                    />
+                  )
+                )}
+                <Input type="file" accept="image/*,video/*" onChange={handleFileUpload} />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowDialog(false)}>
