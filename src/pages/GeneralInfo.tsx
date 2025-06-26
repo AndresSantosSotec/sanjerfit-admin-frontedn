@@ -22,7 +22,13 @@ const GeneralInfoPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editing, setEditing] = useState<GeneralInfo | null>(null);
-  const [form, setForm] = useState({ title: '', content: '', category: '' });
+  const [form, setForm] = useState({
+    title: '',
+    content: '',
+    category: '',
+    imagePath: '',
+  });
+
 
   const fetchInfo = () => {
     setLoading(true);
@@ -38,7 +44,9 @@ const GeneralInfoPage: React.FC = () => {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ title: '', content: '', category: '' });
+
+    setForm({ title: '', content: '', category: '', imagePath: '' });
+
     setShowDialog(true);
   };
 
@@ -48,6 +56,9 @@ const GeneralInfoPage: React.FC = () => {
       title: info.title,
       content: info.content,
       category: info.category || '',
+
+      imagePath: info.image_path || '',
+
     });
     setShowDialog(true);
   };
@@ -58,6 +69,8 @@ const GeneralInfoPage: React.FC = () => {
       title: form.title,
       content: form.content,
       category: form.category || null,
+      image_path: form.imagePath || null,
+
     };
     const req = editing
       ? api.put<GeneralInfo>(`/webadmin/info/${editing.id}`, payload)
@@ -105,6 +118,8 @@ const GeneralInfoPage: React.FC = () => {
                     <th className="p-2">Título</th>
                     <th className="p-2">Contenido</th>
                     <th className="p-2">Categoría</th>
+                    <th className="p-2">Imagen</th>
+
                     <th className="p-2"></th>
                   </tr>
                 </thead>
@@ -114,6 +129,19 @@ const GeneralInfoPage: React.FC = () => {
                       <td className="p-2 font-medium">{info.title}</td>
                       <td className="p-2">{info.content}</td>
                       <td className="p-2">{info.category || '-'}</td>
+
+                      <td className="p-2">
+                        {info.image_path ? (
+                          <img
+                            src={info.image_path}
+                            alt="imagen"
+                            className="w-12 h-12 object-cover"
+                          />
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+
                       <td className="p-2 space-x-2">
                         <Button
                           size="icon"
@@ -161,6 +189,13 @@ const GeneralInfoPage: React.FC = () => {
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               />
+
+              <Input
+                placeholder="URL de la imagen (opcional)"
+                value={form.imagePath}
+                onChange={(e) => setForm({ ...form, imagePath: e.target.value })}
+              />
+
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowDialog(false)}>

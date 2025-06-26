@@ -3,4 +3,7 @@ export interface GeneralInfo {
   title: string;
   content: string;
   category?: string | null;
+
+  image_path?: string | null;
+
 }
