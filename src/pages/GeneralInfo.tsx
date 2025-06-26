@@ -22,11 +22,17 @@ const GeneralInfoPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editing, setEditing] = useState<GeneralInfo | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    title: string;
+    content: string;
+    category: string;
+    file: File | null;
+    filePreview: string;
+  }>({
     title: '',
     content: '',
     category: '',
-    file: null as File | null,
+    file: null,
     filePreview: '',
   });
 
@@ -62,6 +68,7 @@ const GeneralInfoPage: React.FC = () => {
 
   const handleSubmit = () => {
     if (!form.title || !form.content) return;
+
     const fd = new FormData();
     fd.append('title', form.title);
     fd.append('content', form.content);
