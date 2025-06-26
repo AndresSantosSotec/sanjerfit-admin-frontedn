@@ -9,8 +9,10 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import UserRegistration from "./pages/UserRegistration";
 import ManageUsers from "./pages/ManageUsers";
+import Notifications from "./pages/Notifications";
 import PrizeDelivery from "./pages/PrizeDelivery";
 import InventoryManagement from "./pages/InventoryManagement";
+import GeneralInfoPage from "./pages/GeneralInfo";
 import Reports from "./pages/Reports";
 import Security from "./pages/Security";
 import NotFound from "./pages/NotFound";
@@ -29,11 +31,13 @@ const App = () => (
           
           <Route path="/" element={<AdminLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="usuarios/registrar" element={<UserRegistration />} />
-            <Route path="usuarios/gestionar" element={<ManageUsers />} /> {/* New route */}
-            <Route path="premios/entregar" element={<PrizeDelivery />} />
-            <Route path="premios/inventario" element={<InventoryManagement />} />
-            <Route path="reportes" element={<Reports />} />
+          <Route path="usuarios/registrar" element={<UserRegistration />} />
+          <Route path="usuarios/gestionar" element={<ManageUsers />} /> {/* New route */}
+          <Route path="usuarios/notificaciones" element={<Notifications />} />
+          <Route path="premios/entregar" element={<PrizeDelivery />} />
+          <Route path="premios/inventario" element={<InventoryManagement />} />
+          <Route path="informacion-general" element={<GeneralInfoPage />} />
+          <Route path="reportes" element={<Reports />} />
             <Route path="reportes/actividades" element={<Reports />} />
             <Route path="reportes/departamentos" element={<Reports />} />
             <Route path="seguridad" element={<Security />} />
