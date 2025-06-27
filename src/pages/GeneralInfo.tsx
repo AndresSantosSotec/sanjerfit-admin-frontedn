@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import AdminHeader from '@/components/AdminHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
 import { GeneralInfo } from '@/types/general-info';
+import GeneralInfoDetailModal from '@/components/GeneralInfoDetailModal';
 
 const GeneralInfoPage: React.FC = () => {
   const { toast } = useToast();
@@ -22,18 +23,24 @@ const GeneralInfoPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editing, setEditing] = useState<GeneralInfo | null>(null);
+  const [detail, setDetail] = useState<GeneralInfo | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
   const [form, setForm] = useState<{
     title: string;
     content: string;
     category: string;
-    file: File | null;
-    filePreview: string;
+    imageFile: File | null;
+    imagePreview: string;
+    videoFile: File | null;
+    videoPreview: string;
   }>({
     title: '',
     content: '',
     category: '',
-    file: null,
-    filePreview: '',
+    imageFile: null,
+    imagePreview: '',
+    videoFile: null,
+    videoPreview: '',
   });
 
   const fetchInfo = () => {
@@ -50,8 +57,21 @@ const GeneralInfoPage: React.FC = () => {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ title: '', content: '', category: '', file: null, filePreview: '' });
+    setForm({
+      title: '',
+      content: '',
+      category: '',
+      imageFile: null,
+      imagePreview: '',
+      videoFile: null,
+      videoPreview: '',
+    });
     setShowDialog(true);
+  };
+
+  const openDetail = (info: GeneralInfo) => {
+    setDetail(info);
+    setShowDetail(true);
   };
 
   const openEdit = (info: GeneralInfo) => {
@@ -60,8 +80,10 @@ const GeneralInfoPage: React.FC = () => {
       title: info.title,
       content: info.content,
       category: info.category || '',
-      file: null,
-      filePreview: info.image_path || '',
+      imageFile: null,
+      imagePreview: info.image_url || '',
+      videoFile: null,
+      videoPreview: info.video_url || '',
     });
     setShowDialog(true);
   };
@@ -73,7 +95,8 @@ const GeneralInfoPage: React.FC = () => {
     fd.append('title', form.title);
     fd.append('content', form.content);
     if (form.category) fd.append('category', form.category);
-    if (form.file) fd.append('image_path', form.file);
+    if (form.imageFile) fd.append('image', form.imageFile);
+    if (form.videoFile) fd.append('video', form.videoFile);
 
     let req: Promise<any>;
     if (editing) {
@@ -99,10 +122,16 @@ const GeneralInfoPage: React.FC = () => {
     });
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setForm({ ...form, file, filePreview: URL.createObjectURL(file) });
+    setForm({ ...form, imageFile: file, imagePreview: URL.createObjectURL(file) });
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setForm({ ...form, videoFile: file, videoPreview: URL.createObjectURL(file) });
   };
 
   const handleDelete = (id: number) => {
@@ -136,7 +165,7 @@ const GeneralInfoPage: React.FC = () => {
                     <th className="p-2">Título</th>
                     <th className="p-2">Contenido</th>
                     <th className="p-2">Categoría</th>
-                    <th className="p-2">Imagen</th>
+                    <th className="p-2">Multimedia</th>
                     <th className="p-2"></th>
                   </tr>
                 </thead>
@@ -147,16 +176,16 @@ const GeneralInfoPage: React.FC = () => {
                       <td className="p-2">{info.content}</td>
                       <td className="p-2">{info.category || '-'}</td>
                       <td className="p-2">
-                        {info.image_path ? (
-                          /(mp4|webm|ogg)$/i.test(info.image_path) ? (
+                        {info.image_url || info.video_url ? (
+                          info.video_url ? (
                             <video
-                              src={info.image_path}
+                              src={info.video_url}
                               className="w-16 h-10 object-cover"
                               controls
                             />
                           ) : (
                             <img
-                              src={info.image_path}
+                              src={info.image_url!}
                               alt="recurso"
                               className="w-12 h-12 object-cover"
                             />
@@ -166,6 +195,13 @@ const GeneralInfoPage: React.FC = () => {
                         )}
                       </td>
                       <td className="p-2 space-x-2">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => openDetail(info)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
                         <Button
                           size="icon"
                           variant="outline"
@@ -212,23 +248,24 @@ const GeneralInfoPage: React.FC = () => {
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               />
-              <div className="space-y-2">
-                {form.filePreview && (
-                  /(mp4|webm|ogg)$/i.test(form.filePreview) ? (
-                    <video
-                      src={form.filePreview}
-                      className="w-full max-h-40 object-cover"
-                      controls
-                    />
-                  ) : (
-                    <img
-                      src={form.filePreview}
-                      alt="preview"
-                      className="w-full h-32 object-cover rounded"
-                    />
-                  )
+              <div className="space-y-4">
+                {form.imagePreview && (
+                  <img
+                    src={form.imagePreview}
+                    alt="preview"
+                    className="w-full h-32 object-cover rounded"
+                  />
                 )}
-                <Input type="file" accept="image/*,video/*" onChange={handleFileUpload} />
+                <Input type="file" accept="image/*" onChange={handleImageUpload} />
+
+                {form.videoPreview && (
+                  <video
+                    src={form.videoPreview}
+                    className="w-full max-h-40 object-cover"
+                    controls
+                  />
+                )}
+                <Input type="file" accept="video/*" onChange={handleVideoUpload} />
               </div>
             </div>
             <DialogFooter>
@@ -241,6 +278,11 @@ const GeneralInfoPage: React.FC = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <GeneralInfoDetailModal
+          open={showDetail}
+          info={detail}
+          onClose={() => setShowDetail(false)}
+        />
       </div>
     </div>
   );
