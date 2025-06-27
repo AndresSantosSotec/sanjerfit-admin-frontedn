@@ -6,4 +6,9 @@ export interface GeneralInfo {
 
   image_path?: string | null;
 
+  video_path?: string | null;
+
+  image_url?: string | null;
+  video_url?: string | null;
+
 }
