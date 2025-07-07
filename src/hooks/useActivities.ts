@@ -20,6 +20,8 @@ export interface Activity {
   location_lng?: number | null;
   /** Estado de validación: 'pendiente', 'aprobada', 'rechazada' */
   status?: string;
+  /** Marca si la actividad se considera válida */
+  is_valid?: boolean;
   created_at: string;
 }
 
@@ -37,7 +39,7 @@ export function useActivities(
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = () => {
     setLoading(true);
 
     const query = new URLSearchParams();
@@ -54,8 +56,10 @@ export function useActivities(
         setTotal(res.data.total);
       })
       .finally(() => setLoading(false));
-  }, [page, userId, search]);
+  };
 
-  return { data, total, loading };
+  useEffect(fetchData, [page, userId, search]);
+
+  return { data, total, loading, reload: fetchData };
 }
 
