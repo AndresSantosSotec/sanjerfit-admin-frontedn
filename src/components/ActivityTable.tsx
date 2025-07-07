@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { api } from '@/services/api';
 import ActivityDetailModal from './ActivityDetailModal';
 
 export default function ActivityTable() {
@@ -15,7 +16,7 @@ export default function ActivityTable() {
   const { toast } = useToast();
 
   const userId = userFilter ? parseInt(userFilter) : undefined;
-  const { data, total, loading } = useActivities(page, userId, search);
+  const { data, total, loading, reload } = useActivities(page, userId, search);
 
   useEffect(() => {
     setPage(1);
@@ -32,10 +33,18 @@ export default function ActivityTable() {
   const totalPages = Math.ceil(total / 15);
 
   const handleValidate = (id: number, ok: boolean) => {
-    toast({
-      title: ok ? 'Actividad validada' : 'Actividad rechazada',
-    });
-    setSelected(null);
+    api
+      .patch(`/webadmin/activities/${id}/validate`, { is_valid: ok })
+      .then(() => {
+        toast({
+          title: ok ? 'Actividad validada' : 'Actividad invalidada',
+        });
+        reload();
+      })
+      .catch(() =>
+        toast({ title: 'Error al actualizar', variant: 'destructive' })
+      )
+      .finally(() => setSelected(null));
   };
 
   return (
@@ -72,6 +81,7 @@ export default function ActivityTable() {
               <th className="px-4 py-2 text-left">Duración</th>
               <th className="px-4 py-2 text-left">Kcal</th>
               <th className="px-4 py-2 text-left">Fecha</th>
+              <th className="px-4 py-2 text-left">Validez</th>
               <th className="px-4 py-2 text-left">Acciones</th>
             </tr>
           </thead>
@@ -87,6 +97,7 @@ export default function ActivityTable() {
                 <td className="px-4 py-2">
                   {new Date(a.created_at).toLocaleString()}
                 </td>
+                <td className="px-4 py-2">{a.is_valid ? 'Válida' : 'Inválida'}</td>
                 <td className="px-4 py-2 space-x-2">
                   <Button
                     size="sm"
@@ -98,9 +109,9 @@ export default function ActivityTable() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleValidate(a.id, true)}
+                    onClick={() => handleValidate(a.id, !a.is_valid)}
                   >
-                    Validar
+                    {a.is_valid ? 'Invalidar' : 'Validar'}
                   </Button>
                 </td>
               </tr>
