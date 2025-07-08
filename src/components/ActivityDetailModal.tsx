@@ -42,11 +42,13 @@ export default function ActivityDetailModal({ open, onClose, activity, onValidat
               <strong>Fecha:</strong>{' '}
               {new Date(activity.created_at).toLocaleString()}
             </p>
+
             <p className="text-sm flex items-center gap-1">
               <strong>Estado:</strong>
               <Badge variant={activity.is_valid ? 'default' : 'destructive'}>
                 {activity.is_valid ? 'Válida' : 'Inválida'}
               </Badge>
+
             </p>
             {activity.location_lat && activity.location_lng && (
               <p className="text-sm">
@@ -99,9 +101,11 @@ export default function ActivityDetailModal({ open, onClose, activity, onValidat
         <DialogFooter className="gap-2">
           <Button variant="destructive" onClick={() => onValidate(activity.id, false)}>
             Invalidar
+
           </Button>
           <Button variant="default" onClick={() => onValidate(activity.id, true)}>
             Validar
+
           </Button>
         </DialogFooter>
       </DialogContent>
