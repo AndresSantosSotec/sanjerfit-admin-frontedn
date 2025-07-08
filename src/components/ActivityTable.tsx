@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { useActivities, Activity } from '@/hooks/useActivities';
+import { useCollaborators } from '@/hooks/useCollaborators';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -21,9 +22,16 @@ export default function ActivityTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [userFilter, setUserFilter] = useState('');
+
+  const [userSearch, setUserSearch] = useState('');
+  const [selectedUser, setSelectedUser] = useState<
+    { id: number; name: string } | null
+  >(null);
+
   const [validFilter, setValidFilter] = useState<'all' | 'valid' | 'invalid'>('all');
   const [selected, setSelected] = useState<Activity | null>(null);
   const { toast } = useToast();
+  const { data: collaborators } = useCollaborators();
 
   const userId = userFilter ? parseInt(userFilter) : undefined;
 
@@ -79,15 +87,67 @@ export default function ActivityTable() {
             placeholder="Ejercicio o notas"
           />
         </div>
+        <div className="space-y-1 relative">
+          <Label htmlFor="userSearch">Colaborador</Label>
+          {selectedUser ? (
+            <div className="flex items-center gap-1">
+              <Input id="userSearch" value={selectedUser.name} disabled />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={() => {
+                  setSelectedUser(null);
+                  setUserFilter('');
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Input
+                id="userSearch"
+                value={userSearch}
+                onChange={e => setUserSearch(e.target.value)}
+                placeholder="Todos"
+              />
+              {userSearch && (
+                <div className="absolute z-10 bg-white border shadow w-full mt-1">
+                  {collaborators
+                    .filter(c =>
+                      c.name.toLowerCase().includes(userSearch.toLowerCase())
+                    )
+                    .map(c => (
+                      <div
+                        key={c.id}
+                        className="p-2 cursor-pointer hover:bg-gray-100"
+                        onClick={() => {
+                          setSelectedUser(c);
+                          setUserFilter(String(c.id));
+                          setUserSearch('');
+                        }}
+                      >
+                        {c.name}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
         <div className="space-y-1">
-          <Label htmlFor="userId">Usuario ID</Label>
-          <Input
-            id="userId"
-            type="number"
-            value={userFilter}
-            onChange={e => setUserFilter(e.target.value)}
-            placeholder="Todos"
-          />
+          <Label>Validez</Label>
+          <Select value={validFilter} onValueChange={v => setValidFilter(v as 'all' | 'valid' | 'invalid')}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Todas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="valid">Válidas</SelectItem>
+              <SelectItem value="invalid">Inválidas</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-1">
           <Label>Validez</Label>
