@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { api } from '@/services/api';
 import { GeneralInfo } from '@/types/general-info';
@@ -226,56 +227,66 @@ const GeneralInfoPage: React.FC = () => {
         </Card>
 
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editing ? 'Editar Información' : 'Nueva Información'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <Input
-                placeholder="Título"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
-              <Textarea
-                placeholder="Contenido"
-                value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-              />
-              <Input
-                placeholder="Categoría (opcional)"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-              />
-              <div className="space-y-4">
-                {form.imagePreview && (
-                  <img
-                    src={form.imagePreview}
-                    alt="preview"
-                    className="w-full h-32 object-cover rounded"
+          <DialogContent className="max-w-2xl p-0">
+            <div className="flex flex-col max-h-[90vh]">
+              <DialogHeader className="px-6 pt-6">
+                <DialogTitle>
+                  {editing ? 'Editar Información' : 'Nueva Información'}
+                </DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                <Input
+                  placeholder="Título"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                />
+                <Textarea
+                  placeholder="Contenido"
+                  value={form.content}
+                  onChange={(e) => setForm({ ...form, content: e.target.value })}
+                />
+                <Input
+                  placeholder="Categoría (opcional)"
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                />
+                <div className="space-y-4">
+                  {form.imagePreview && (
+                    <img
+                      src={form.imagePreview}
+                      alt="preview"
+                      className="w-full h-32 object-cover rounded"
+                    />
+                  )}
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
                   />
-                )}
-                <Input type="file" accept="image/*" onChange={handleImageUpload} />
 
-                {form.videoPreview && (
-                  <video
-                    src={form.videoPreview}
-                    className="w-full max-h-40 object-cover"
-                    controls
+                  {form.videoPreview && (
+                    <video
+                      src={form.videoPreview}
+                      className="w-full max-h-40 object-cover"
+                      controls
+                    />
+                  )}
+                  <Input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoUpload}
                   />
-                )}
-                <Input type="file" accept="video/*" onChange={handleVideoUpload} />
-              </div>
+                </div>
+              </ScrollArea>
+              <DialogFooter className="px-6 pb-6 pt-4">
+                <Button variant="outline" onClick={() => setShowDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button className="bg-sanjer-green" onClick={handleSubmit}>
+                  Guardar
+                </Button>
+              </DialogFooter>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowDialog(false)}>
-                Cancelar
-              </Button>
-              <Button className="bg-sanjer-green" onClick={handleSubmit}>
-                Guardar
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
         <GeneralInfoDetailModal

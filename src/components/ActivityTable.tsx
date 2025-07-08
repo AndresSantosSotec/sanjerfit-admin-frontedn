@@ -149,19 +149,6 @@ export default function ActivityTable() {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
-          <Label>Validez</Label>
-          <Select value={validFilter} onValueChange={v => setValidFilter(v as 'all' | 'valid' | 'invalid')}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Todas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="valid">Válidas</SelectItem>
-              <SelectItem value="invalid">Inválidas</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       <div className="relative w-full overflow-auto">
