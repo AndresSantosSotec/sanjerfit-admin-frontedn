@@ -20,6 +20,8 @@ export interface Activity {
   location_lng?: number | null;
   /** Estado de validación: 'pendiente', 'aprobada', 'rechazada' */
   status?: string;
+  /** Marca si la actividad se considera válida */
+  is_valid?: boolean;
   created_at: string;
 }
 
@@ -31,19 +33,22 @@ interface Paginated<T> {
 export function useActivities(
   page = 1,
   userId?: number,
-  search?: string
+  search?: string,
+  isValid?: boolean
 ) {
   const [data, setData] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = () => {
     setLoading(true);
 
     const query = new URLSearchParams();
     query.set('page', String(page));
     if (userId) query.set('user_id', String(userId));
     if (search) query.set('search', search);
+    if (typeof isValid === 'boolean')
+      query.set('is_valid', isValid ? '1' : '0');
 
     const url = `/webadmin/activities?${query.toString()}`;
 
@@ -54,8 +59,10 @@ export function useActivities(
         setTotal(res.data.total);
       })
       .finally(() => setLoading(false));
-  }, [page, userId, search]);
+  };
 
-  return { data, total, loading };
+  useEffect(fetchData, [page, userId, search, isValid]);
+
+  return { data, total, loading, reload: fetchData };
 }
 
