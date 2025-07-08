@@ -61,7 +61,9 @@ export function useActivities(
       .finally(() => setLoading(false));
   };
 
+
   useEffect(fetchData, [page, userId, search, isValid]);
+
 
   return { data, total, loading, reload: fetchData };
 }
