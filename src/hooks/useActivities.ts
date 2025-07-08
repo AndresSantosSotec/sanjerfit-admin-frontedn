@@ -33,7 +33,8 @@ interface Paginated<T> {
 export function useActivities(
   page = 1,
   userId?: number,
-  search?: string
+  search?: string,
+  isValid?: boolean
 ) {
   const [data, setData] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
@@ -46,6 +47,8 @@ export function useActivities(
     query.set('page', String(page));
     if (userId) query.set('user_id', String(userId));
     if (search) query.set('search', search);
+    if (typeof isValid === 'boolean')
+      query.set('is_valid', isValid ? '1' : '0');
 
     const url = `/webadmin/activities?${query.toString()}`;
 
@@ -58,7 +61,9 @@ export function useActivities(
       .finally(() => setLoading(false));
   };
 
-  useEffect(fetchData, [page, userId, search]);
+
+  useEffect(fetchData, [page, userId, search, isValid]);
+
 
   return { data, total, loading, reload: fetchData };
 }

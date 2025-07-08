@@ -4,7 +4,16 @@ import { useActivities, Activity } from '@/hooks/useActivities';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 import { api } from '@/services/api';
 import ActivityDetailModal from './ActivityDetailModal';
 
@@ -12,15 +21,25 @@ export default function ActivityTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [userFilter, setUserFilter] = useState('');
+  const [validFilter, setValidFilter] = useState<'all' | 'valid' | 'invalid'>('all');
   const [selected, setSelected] = useState<Activity | null>(null);
   const { toast } = useToast();
 
   const userId = userFilter ? parseInt(userFilter) : undefined;
-  const { data, total, loading, reload } = useActivities(page, userId, search);
+
+  const isValidParam =
+    validFilter === 'all' ? undefined : validFilter === 'valid';
+  const { data, total, loading, reload } = useActivities(
+    page,
+    userId,
+    search,
+    isValidParam,
+  );
+
 
   useEffect(() => {
     setPage(1);
-  }, [search, userFilter]);
+  }, [search, userFilter, validFilter]);
 
   if (loading) {
     return (
@@ -70,6 +89,19 @@ export default function ActivityTable() {
             placeholder="Todos"
           />
         </div>
+        <div className="space-y-1">
+          <Label>Validez</Label>
+          <Select value={validFilter} onValueChange={v => setValidFilter(v as 'all' | 'valid' | 'invalid')}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Todas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="valid">Válidas</SelectItem>
+              <SelectItem value="invalid">Inválidas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="relative w-full overflow-auto">
@@ -97,7 +129,13 @@ export default function ActivityTable() {
                 <td className="px-4 py-2">
                   {new Date(a.created_at).toLocaleString()}
                 </td>
-                <td className="px-4 py-2">{a.is_valid ? 'Válida' : 'Inválida'}</td>
+
+                <td className="px-4 py-2">
+                  <Badge variant={a.is_valid ? 'default' : 'destructive'}>
+                    {a.is_valid ? 'Válida' : 'Inválida'}
+                  </Badge>
+                </td>
+
                 <td className="px-4 py-2 space-x-2">
                   <Button
                     size="sm"
@@ -108,7 +146,8 @@ export default function ActivityTable() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant={a.is_valid ? 'destructive' : 'default'}
+
                     onClick={() => handleValidate(a.id, !a.is_valid)}
                   >
                     {a.is_valid ? 'Invalidar' : 'Validar'}
