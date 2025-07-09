@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Loader2, X } from 'lucide-react';
 import { useActivities, Activity } from '@/hooks/useActivities';
 import { useCollaborators } from '@/hooks/useCollaborators';
@@ -21,6 +22,8 @@ import ActivityDetailModal from './ActivityDetailModal';
 export default function ActivityTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  // trim the search input so queries do not include unnecessary whitespace
+  const debouncedSearch = useDebounce(search.trim(), 300);
   const [userFilter, setUserFilter] = useState('');
 
   const [userSearch, setUserSearch] = useState('');
@@ -28,7 +31,7 @@ export default function ActivityTable() {
     { id: number; name: string } | null
   >(null);
 
-  const [validFilter, setValidFilter] = useState<'all' | 'valid' | 'invalid'>('all');
+  const [validFilter, setValidFilter] = useState<'all' | 'valid' | 'invalid'>('valid');
   const [selected, setSelected] = useState<Activity | null>(null);
   const { toast } = useToast();
   const { data: collaborators } = useCollaborators();
@@ -40,14 +43,14 @@ export default function ActivityTable() {
   const { data, total, loading, reload } = useActivities(
     page,
     userId,
-    search,
+    debouncedSearch,
     isValidParam,
   );
 
 
   useEffect(() => {
     setPage(1);
-  }, [search, userFilter, validFilter]);
+  }, [debouncedSearch, userFilter, validFilter]);
 
   if (loading) {
     return (
@@ -84,7 +87,7 @@ export default function ActivityTable() {
             id="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Ejercicio o notas"
+            placeholder="Ejercicio, notas o usuario"
           />
         </div>
         <div className="space-y-1 relative">
