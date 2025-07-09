@@ -22,8 +22,10 @@ import ActivityDetailModal from './ActivityDetailModal';
 export default function ActivityTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+
   // trim the search input so queries do not include unnecessary whitespace
   const debouncedSearch = useDebounce(search.trim(), 300);
+
   const [userFilter, setUserFilter] = useState('');
 
   const [userSearch, setUserSearch] = useState('');
