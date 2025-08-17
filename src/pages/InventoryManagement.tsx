@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Plus, Minus, Package, Image, Upload } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,56 +16,55 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AdminHeader from '@/components/AdminHeader';
-
-interface Prize {
-  id: number;
-  name: string;
-  image: string;
-  cost: number;
-  stock: number;
-  hasCustomImage?: boolean;
-}
+import api from '@/api/client';
+import { Paginated, Premio } from '@/types/premio';
 
 const InventoryManagement = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [newPrize, setNewPrize] = useState({
-    name: '',
-    cost: '',
+    nombre: '',
+    costo_fitcoins: '',
     stock: '',
     image: null as File | null,
     imagePreview: ''
   });
-  
-  const [prizes, setPrizes] = useState<Prize[]>([
-    { id: 1, name: 'Gorra deportiva', image: '/placeholder.svg', cost: 60, stock: 45 },
-    { id: 2, name: 'Pachón reutilizable', image: '/placeholder.svg', cost: 80, stock: 30 },
-    { id: 3, name: 'Camiseta SanjerFit', image: '/placeholder.svg', cost: 120, stock: 25 },
-    { id: 4, name: 'Snack saludable', image: '/placeholder.svg', cost: 40, stock: 50 },
-    { id: 5, name: 'Membresía Gym (1 mes)', image: '/placeholder.svg', cost: 250, stock: 10 },
-  ]);
-  
-  const [editingPrize, setEditingPrize] = useState<Prize | null>(null);
+
+  const [prizes, setPrizes] = useState<Premio[]>([]);
+
+  const [editingPrize, setEditingPrize] = useState<Premio | null>(null);
   const [showImageDialog, setShowImageDialog] = useState(false);
-  const [selectedPrizeForImage, setSelectedPrizeForImage] = useState<Prize | null>(null);
+  const [selectedPrizeForImage, setSelectedPrizeForImage] = useState<Premio | null>(null);
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
+
+  const fetchPrizes = useCallback(async () => {
+    try {
+      const res = await api.get<Paginated<Premio>>('/webadmin/premios');
+      setPrizes(res.data.data);
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudieron cargar los premios' });
+    }
+  }, [toast]);
+
+  useEffect(() => { fetchPrizes(); }, [fetchPrizes]);
   
-  const handleUpdateStock = (id: number, increment: boolean) => {
-    setPrizes(prizes.map(prize => {
-      if (prize.id === id) {
-        return {
-          ...prize,
-          stock: increment ? prize.stock + 1 : Math.max(0, prize.stock - 1)
-        };
-      }
-      return prize;
-    }));
-    
-    toast({
-      title: "Stock actualizado",
-      description: increment ? "Se ha añadido una unidad al inventario" : "Se ha removido una unidad del inventario",
-    });
+  const handleUpdateStock = async (id: number, increment: boolean) => {
+    const prize = prizes.find(p => p.id === id);
+    if (!prize) return;
+    const newStock = increment ? prize.stock + 1 : Math.max(0, prize.stock - 1);
+    try {
+      await api.put(`/webadmin/premios/${id}`, { stock: newStock });
+      toast({
+        title: 'Stock actualizado',
+        description: increment
+          ? 'Se ha añadido una unidad al inventario'
+          : 'Se ha removido una unidad del inventario',
+      });
+      fetchPrizes();
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudo actualizar el stock' });
+    }
   };
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,66 +86,63 @@ const InventoryManagement = () => {
     }
   };
   
-  const savePrizeImage = () => {
-    if (selectedPrizeForImage && imagePreview) {
-      setPrizes(prizes.map(prize => {
-        if (prize.id === selectedPrizeForImage.id) {
-          return {
-            ...prize,
-            image: imagePreview, // In a real app, this would be the URL after upload
-            hasCustomImage: true
-          };
-        }
-        return prize;
-      }));
-      
-      setShowImageDialog(false);
-      setImagePreview('');
-      setUploadedImage(null);
-      
-      toast({
-        title: "Imagen actualizada",
-        description: "La imagen del premio ha sido actualizada correctamente",
-      });
+  const savePrizeImage = async () => {
+    if (selectedPrizeForImage && uploadedImage) {
+      try {
+        const form = new FormData();
+        form.append('file', uploadedImage);
+        const res = await api.post('/webadmin/files', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        const path = res.data.path || res.data.image_path;
+        await api.put(`/webadmin/premios/${selectedPrizeForImage.id}`, { image_path: path });
+        toast({
+          title: 'Imagen actualizada',
+          description: 'La imagen del premio ha sido actualizada correctamente',
+        });
+        setShowImageDialog(false);
+        setImagePreview('');
+        setUploadedImage(null);
+        fetchPrizes();
+      } catch (e) {
+        toast({ title: 'Error', description: 'No se pudo actualizar la imagen' });
+      }
     }
   };
-  
-  const openImageUpload = (prize: Prize) => {
+
+  const openImageUpload = (prize: Premio) => {
     setSelectedPrizeForImage(prize);
     setShowImageDialog(true);
     setImagePreview('');
   };
   
-  const handleAddPrize = () => {
-    const newId = Math.max(...prizes.map(p => p.id), 0) + 1;
-    
-    const newPrizeItem: Prize = {
-      id: newId,
-      name: newPrize.name,
-      image: newPrize.imagePreview || '/placeholder.svg',
-      cost: parseInt(newPrize.cost) || 0,
-      stock: parseInt(newPrize.stock) || 0,
-      hasCustomImage: !!newPrize.imagePreview
-    };
-    
-    setPrizes([...prizes, newPrizeItem]);
-    
-    setNewPrize({
-      name: '',
-      cost: '',
-      stock: '',
-      image: null,
-      imagePreview: ''
-    });
-    
-    toast({
-      title: "Premio añadido",
-      description: "El nuevo premio ha sido agregado al inventario",
-    });
+  const handleAddPrize = async () => {
+    try {
+      let imagePath = '';
+      if (newPrize.image) {
+        const form = new FormData();
+        form.append('file', newPrize.image);
+        const res = await api.post('/webadmin/files', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        imagePath = res.data.path || res.data.image_path || '';
+      }
+      await api.post('/webadmin/premios', {
+        nombre: newPrize.nombre,
+        costo_fitcoins: parseInt(newPrize.costo_fitcoins) || 0,
+        stock: parseInt(newPrize.stock) || 0,
+        image_path: imagePath || undefined,
+      });
+      setNewPrize({ nombre: '', costo_fitcoins: '', stock: '', image: null, imagePreview: '' });
+      toast({ title: 'Premio añadido', description: 'El nuevo premio ha sido agregado al inventario' });
+      fetchPrizes();
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudo agregar el premio' });
+    }
   };
-  
-  const filteredPrizes = prizes.filter(prize => 
-    prize.name.toLowerCase().includes(searchTerm.toLowerCase())
+
+  const filteredPrizes = prizes.filter(prize =>
+    prize.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -187,8 +183,8 @@ const InventoryManagement = () => {
                   <Label htmlFor="name">Nombre del Premio</Label>
                   <Input 
                     id="name"
-                    value={newPrize.name}
-                    onChange={(e) => setNewPrize({...newPrize, name: e.target.value})}
+                    value={newPrize.nombre}
+                    onChange={(e) => setNewPrize({ ...newPrize, nombre: e.target.value })}
                     placeholder="Ej: Gorra deportiva"
                   />
                 </div>
@@ -230,8 +226,8 @@ const InventoryManagement = () => {
                   <Input 
                     id="cost"
                     type="number"
-                    value={newPrize.cost}
-                    onChange={(e) => setNewPrize({...newPrize, cost: e.target.value})}
+                    value={newPrize.costo_fitcoins}
+                    onChange={(e) => setNewPrize({ ...newPrize, costo_fitcoins: e.target.value })}
                     placeholder="Ej: 100"
                   />
                 </div>
@@ -241,7 +237,7 @@ const InventoryManagement = () => {
                     id="stock"
                     type="number"
                     value={newPrize.stock}
-                    onChange={(e) => setNewPrize({...newPrize, stock: e.target.value})}
+                    onChange={(e) => setNewPrize({ ...newPrize, stock: e.target.value })}
                     placeholder="Ej: 10"
                   />
                 </div>
@@ -251,7 +247,7 @@ const InventoryManagement = () => {
                 <Button 
                   type="submit" 
                   onClick={handleAddPrize}
-                  disabled={!newPrize.name || !newPrize.cost}
+                  disabled={!newPrize.nombre || !newPrize.costo_fitcoins}
                   className="bg-sanjer-green hover:bg-green-600"
                 >
                   Añadir Premio
@@ -269,8 +265,8 @@ const InventoryManagement = () => {
                 onClick={() => openImageUpload(prize)}
               >
                 <img 
-                  src={prize.image} 
-                  alt={prize.name}
+                  src={prize.image_url || prize.image_path || '/placeholder.svg'}
+                  alt={prize.nombre}
                   className="h-32 object-contain"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -279,8 +275,8 @@ const InventoryManagement = () => {
               </div>
               
               <div className="p-4">
-                <h4 className="font-semibold mb-1">{prize.name}</h4>
-                <p className="text-sm text-muted-foreground mb-3">{prize.cost} CoinFits</p>
+                <h4 className="font-semibold mb-1">{prize.nombre}</h4>
+                <p className="text-sm text-muted-foreground mb-3">{prize.costo_fitcoins} CoinFits</p>
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">

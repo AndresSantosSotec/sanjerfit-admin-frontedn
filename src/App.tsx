@@ -12,6 +12,7 @@ import ManageUsers from "./pages/ManageUsers";
 import Notifications from "./pages/Notifications";
 import PrizeDelivery from "./pages/PrizeDelivery";
 import InventoryManagement from "./pages/InventoryManagement";
+import PremiosPage from "./pages/Premios";
 import GeneralInfoPage from "./pages/GeneralInfo";
 import Reports from "./pages/Reports";
 import Security from "./pages/Security";
@@ -31,11 +32,12 @@ const App = () => (
           
           <Route path="/" element={<AdminLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
-          <Route path="usuarios/registrar" element={<UserRegistration />} />
-          <Route path="usuarios/gestionar" element={<ManageUsers />} /> {/* New route */}
-          <Route path="usuarios/notificaciones" element={<Notifications />} />
-          <Route path="premios/entregar" element={<PrizeDelivery />} />
-          <Route path="premios/inventario" element={<InventoryManagement />} />
+            <Route path="premios" element={<PremiosPage />} />
+            <Route path="usuarios/registrar" element={<UserRegistration />} />
+            <Route path="usuarios/gestionar" element={<ManageUsers />} /> {/* New route */}
+            <Route path="usuarios/notificaciones" element={<Notifications />} />
+            <Route path="premios/entregar" element={<PrizeDelivery />} />
+            <Route path="premios/inventario" element={<InventoryManagement />} />
           <Route path="informacion-general" element={<GeneralInfoPage />} />
           <Route path="reportes" element={<Reports />} />
             <Route path="reportes/actividades" element={<Reports />} />
