@@ -99,8 +99,6 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
                   }
                 });
                 fd.append('image', file);
-
-                console.log('upload create image', file instanceof File, file?.type);
                 await onSubmit(fd);
               } else if (imageMode === 'url' && url) {
                 await onSubmit({ ...base, image_path: url });
@@ -129,9 +127,6 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
                   }
                 });
                 fd.append('image', file);
-
-                console.log('upload update image', file instanceof File, file?.type);
-
                 await onSubmit(fd);
               } else if (imageMode === 'url' && url && url !== initial?.image_url) {
                 await onSubmit({ ...base, image_path: url });
