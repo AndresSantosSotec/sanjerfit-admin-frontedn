@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Premio } from '@/types/premio';
@@ -12,21 +11,18 @@ type Props = {
   initial?: Premio;
   submitting?: boolean;
   onSubmit: (payload: FormData | Record<string, any>) => Promise<void>;
-
   onClose: () => void;
 };
 
 export default function PremioFormModal({ open, mode, initial, submitting, onSubmit, onClose }: Props) {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
-
     defaultValues: {
       nombre: '',
       descripcion: '',
       costo_fitcoins: 10,
       stock: 0,
       is_active: true as any,
-
     },
   });
 
@@ -84,14 +80,19 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
             if (readOnly) return;
             data.costo_fitcoins = Number(data.costo_fitcoins);
             data.stock = Number(data.stock);
-
             data.is_active = data.is_active === true || data.is_active === 'true';
             const base: Record<string, any> = { ...data };
 
             if (mode === 'create') {
               if (imageMode === 'file' && file) {
                 const fd = new FormData();
-                Object.entries(base).forEach(([k, v]) => fd.append(k, String(v)));
+                Object.entries(base).forEach(([k, v]) => {
+                  if (k === 'is_active') {
+                    fd.append(k, v ? '1' : '0');
+                  } else {
+                    fd.append(k, String(v));
+                  }
+                });
                 fd.append('image', file);
                 await onSubmit(fd);
               } else if (imageMode === 'url' && url) {
@@ -102,12 +103,24 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
             } else if (mode === 'edit') {
               if (removeImage) {
                 const fd = new FormData();
-                Object.entries(base).forEach(([k, v]) => fd.append(k, String(v)));
+                Object.entries(base).forEach(([k, v]) => {
+                  if (k === 'is_active') {
+                    fd.append(k, v ? '1' : '0');
+                  } else {
+                    fd.append(k, String(v));
+                  }
+                });
                 fd.append('remove_image', 'true');
                 await onSubmit(fd);
               } else if (imageMode === 'file' && file) {
                 const fd = new FormData();
-                Object.entries(base).forEach(([k, v]) => fd.append(k, String(v)));
+                Object.entries(base).forEach(([k, v]) => {
+                  if (k === 'is_active') {
+                    fd.append(k, v ? '1' : '0');
+                  } else {
+                    fd.append(k, String(v));
+                  }
+                });
                 fd.append('image', file);
                 await onSubmit(fd);
               } else if (imageMode === 'url' && url && url !== initial?.image_url) {
@@ -116,13 +129,11 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
                 await onSubmit(base);
               }
             }
-
           })}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Nombre*</label>
-
               <input
                 className="mt-1 w-full rounded-lg border px-3 py-2"
                 disabled={readOnly}
@@ -134,7 +145,6 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
 
             <div>
               <label className="text-sm font-medium">Costo (Fitcoins)*</label>
-
               <input
                 type="number"
                 min={1}
@@ -147,7 +157,6 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
 
             <div>
               <label className="text-sm font-medium">Stock*</label>
-
               <input
                 type="number"
                 min={0}
@@ -160,7 +169,6 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
 
             <div>
               <label className="text-sm font-medium">Activo</label>
-
               <select
                 className="mt-1 w-full rounded-lg border px-3 py-2"
                 disabled={readOnly}

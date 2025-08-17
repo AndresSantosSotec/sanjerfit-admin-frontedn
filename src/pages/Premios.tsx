@@ -66,11 +66,8 @@ export default function PremiosPage() {
   const createItem = async (payload: FormData | Record<string, any>) => {
     setSubmitting(true);
     try {
-      if (payload instanceof FormData) {
-        await api.post('/webadmin/premios', payload, { headers: { "Content-Type": "multipart/form-data" } });
-      } else {
-        await api.post('/webadmin/premios', payload);
-      }
+      await api.post('/webadmin/premios', payload);
+
       notifySuccess('Premio creado');
       setModalOpen(false);
       await fetchList();
@@ -85,11 +82,9 @@ export default function PremiosPage() {
     if (!current) return;
     setSubmitting(true);
     try {
-      if (payload instanceof FormData) {
-        await api.put(`/webadmin/premios/${current.id}`, payload, { headers: { "Content-Type": "multipart/form-data" } });
-      } else {
-        await api.put(`/webadmin/premios/${current.id}`, payload);
-      }
+
+      await api.put(`/webadmin/premios/${current.id}`, payload);
+
       notifySuccess('Premio actualizado');
       setModalOpen(false);
       setCurrent(null);
@@ -147,6 +142,7 @@ export default function PremiosPage() {
     }
     setConfirm((c) => ({ ...c, open: false }));
   };
+
   return (
     <div className="p-6 space-y-6">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -242,4 +238,5 @@ export default function PremiosPage() {
       />
     </div>
   );
-}
+
+
