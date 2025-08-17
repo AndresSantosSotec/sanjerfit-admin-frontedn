@@ -6,6 +6,7 @@ import PremioFormModal from '@/components/premios/PremioFormModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { notifyError, notifySuccess } from '@/utils/notifications';
 
+
 type StatusFilter = 'todos' | 'activos' | 'inactivos';
 
 export default function PremiosPage() {
@@ -61,10 +62,12 @@ export default function PremiosPage() {
   const openEdit = (p: Premio) => { setCurrent(p); setModalMode('edit'); setModalOpen(true); };
   const openView = (p: Premio) => { setCurrent(p); setModalMode('view'); setModalOpen(true); };
 
+
   const createItem = async (payload: FormData | Record<string, any>) => {
     setSubmitting(true);
     try {
       await api.post('/webadmin/premios', payload);
+
       notifySuccess('Premio creado');
       setModalOpen(false);
       await fetchList();
@@ -79,7 +82,9 @@ export default function PremiosPage() {
     if (!current) return;
     setSubmitting(true);
     try {
+
       await api.put(`/webadmin/premios/${current.id}`, payload);
+
       notifySuccess('Premio actualizado');
       setModalOpen(false);
       setCurrent(null);
@@ -233,4 +238,5 @@ export default function PremiosPage() {
       />
     </div>
   );
-}
+
+

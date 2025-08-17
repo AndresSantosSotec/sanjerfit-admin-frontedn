@@ -15,6 +15,7 @@ type Props = {
 };
 
 export default function PremioFormModal({ open, mode, initial, submitting, onSubmit, onClose }: Props) {
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
       nombre: '',
