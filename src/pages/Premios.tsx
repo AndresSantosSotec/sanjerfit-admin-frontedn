@@ -3,7 +3,9 @@ import api from '@/api/client';
 import { Paginated, Premio } from '@/types/premio';
 import PremioCard from '@/components/premios/PremioCard';
 import PremioFormModal from '@/components/premios/PremioFormModal';
-import { confirmAction, toastError, toastSuccess } from '@/utils/alerts';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { notifyError, notifySuccess } from '@/utils/notifications';
+
 
 type StatusFilter = 'todos' | 'activos' | 'inactivos';
 
@@ -21,6 +23,13 @@ export default function PremiosPage() {
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('create');
   const [current, setCurrent] = useState<Premio | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [confirm, setConfirm] = useState<{
+    open: boolean;
+    title: string;
+    description?: string;
+    confirmText?: string;
+    action: (() => Promise<void>) | null;
+  }>({ open: false, title: '', action: null });
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -53,67 +62,91 @@ export default function PremiosPage() {
   const openEdit = (p: Premio) => { setCurrent(p); setModalMode('edit'); setModalOpen(true); };
   const openView = (p: Premio) => { setCurrent(p); setModalMode('view'); setModalOpen(true); };
 
-  const createItem = async (payload: Partial<Premio>) => {
+
+  const createItem = async (payload: FormData | Record<string, any>) => {
     setSubmitting(true);
     try {
-      await api.post('/webadmin/premios', payload);
-      toastSuccess('Premio creado');
+      if (payload instanceof FormData) {
+        await api.post('/webadmin/premios', payload, { headers: { "Content-Type": "multipart/form-data" } });
+      } else {
+        await api.post('/webadmin/premios', payload);
+      }
+      notifySuccess('Premio creado');
       setModalOpen(false);
       await fetchList();
     } catch (e: any) {
-      toastError(e?.response?.data?.message ?? 'Error al crear premio');
+      notifyError(e?.response?.data?.message ?? 'Error al crear premio');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const updateItem = async (payload: Partial<Premio>) => {
+  const updateItem = async (payload: FormData | Record<string, any>) => {
     if (!current) return;
     setSubmitting(true);
     try {
-      await api.put(`/webadmin/premios/${current.id}`, payload);
-      toastSuccess('Premio actualizado');
+      if (payload instanceof FormData) {
+        await api.put(`/webadmin/premios/${current.id}`, payload, { headers: { "Content-Type": "multipart/form-data" } });
+      } else {
+        await api.put(`/webadmin/premios/${current.id}`, payload);
+      }
+      notifySuccess('Premio actualizado');
       setModalOpen(false);
       setCurrent(null);
       await fetchList();
     } catch (e: any) {
-      toastError(e?.response?.data?.message ?? 'Error al actualizar premio');
+      notifyError(e?.response?.data?.message ?? 'Error al actualizar premio');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const toggleItem = async (p: Premio) => {
-    const ok = await confirmAction(
-      p.is_active ? '¿Desactivar premio?' : '¿Activar premio?',
-      p.is_active ? 'No aparecerá como canjeable.' : 'Se mostrará como disponible si tiene stock.'
-    );
-    if (!ok) return;
-
-    try {
-      await api.patch(`/webadmin/premios/${p.id}/toggle`);
-      toastSuccess('Estado actualizado');
-      await fetchList();
-    } catch (e: any) {
-      toastError(e?.response?.data?.message ?? 'No se pudo actualizar el estado');
-    }
+  const toggleItem = (p: Premio) => {
+    setConfirm({
+      open: true,
+      title: p.is_active ? '¿Desactivar premio?' : '¿Activar premio?',
+      description: p.is_active
+        ? 'No aparecerá como canjeable.'
+        : 'Se mostrará como disponible si tiene stock.',
+      confirmText: p.is_active ? 'Desactivar' : 'Activar',
+      action: async () => {
+        try {
+          await api.patch(`/webadmin/premios/${p.id}/toggle`);
+          notifySuccess('Estado actualizado');
+          await fetchList();
+        } catch (e: any) {
+          notifyError(e?.response?.data?.message ?? 'No se pudo actualizar el estado');
+        }
+      },
+    });
   };
 
-  const deleteItem = async (p: Premio) => {
-    const ok = await confirmAction('¿Eliminar este premio?', 'Esta acción no se puede deshacer.', 'Sí, eliminar');
-    if (!ok) return;
-
-    try {
-      await api.delete(`/webadmin/premios/${p.id}`);
-      toastSuccess('Premio eliminado');
-      await fetchList();
-    } catch (e: any) {
-      toastError(e?.response?.data?.message ?? 'No se pudo eliminar');
-    }
+  const deleteItem = (p: Premio) => {
+    setConfirm({
+      open: true,
+      title: '¿Eliminar este premio?',
+      description: 'Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      action: async () => {
+        try {
+          await api.delete(`/webadmin/premios/${p.id}`);
+          notifySuccess('Premio eliminado');
+          await fetchList();
+        } catch (e: any) {
+          notifyError(e?.response?.data?.message ?? 'No se pudo eliminar');
+        }
+      },
+    });
   };
 
   const headerTitle = useMemo(() => 'Premios (cards)', []);
 
+  const handleConfirm = async () => {
+    if (confirm.action) {
+      await confirm.action();
+    }
+    setConfirm((c) => ({ ...c, open: false }));
+  };
   return (
     <div className="p-6 space-y-6">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -198,6 +231,14 @@ export default function PremiosPage() {
         submitting={submitting}
         onClose={() => { setModalOpen(false); setCurrent(null); }}
         onSubmit={modalMode === 'create' ? createItem : updateItem}
+      />
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        description={confirm.description}
+        confirmText={confirm.confirmText}
+        onCancel={() => setConfirm((c) => ({ ...c, open: false }))}
+        onConfirm={handleConfirm}
       />
     </div>
   );
