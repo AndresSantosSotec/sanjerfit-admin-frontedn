@@ -15,13 +15,16 @@ type Props = {
 };
 
 export default function PremioFormModal({ open, mode, initial, submitting, onSubmit, onClose }: Props) {
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
       nombre: '',
       descripcion: '',
       costo_fitcoins: 10,
       stock: 0,
+
       is_active: '1' as any,
+
     },
   });
 
@@ -42,6 +45,7 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
           costo_fitcoins: initial.costo_fitcoins ?? 10,
           stock: initial.stock ?? 0,
           is_active: (initial.is_active ? '1' : '0') as any,
+
         });
         if (initial.image_url) {
           setShowPicker(false);
@@ -79,7 +83,9 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
             if (readOnly) return;
             data.costo_fitcoins = Number(data.costo_fitcoins);
             data.stock = Number(data.stock);
+
             data.is_active = data.is_active === true;
+
             const base: Record<string, any> = { ...data };
 
             if (mode === 'create') {
@@ -93,6 +99,7 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
                   }
                 });
                 fd.append('image', file);
+
                 console.log('upload create image', file instanceof File, file?.type);
                 await onSubmit(fd);
               } else if (imageMode === 'url' && url) {
@@ -122,7 +129,9 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
                   }
                 });
                 fd.append('image', file);
+
                 console.log('upload update image', file instanceof File, file?.type);
+
                 await onSubmit(fd);
               } else if (imageMode === 'url' && url && url !== initial?.image_url) {
                 await onSubmit({ ...base, image_path: url });
@@ -173,12 +182,14 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
               <select
                 className="mt-1 w-full rounded-lg border px-3 py-2"
                 disabled={readOnly}
+
                 {...register('is_active', {
                   setValueAs: (v) => v === '1' || v === true || v === 1,
                 })}
               >
                 <option value="1">Sí</option>
                 <option value="0">No</option>
+
               </select>
             </div>
 
@@ -275,4 +286,6 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
       </div>
     </div>
   );
+
 }
+
