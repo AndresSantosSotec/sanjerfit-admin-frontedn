@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Search, Award, User, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import AdminHeader from '@/components/AdminHeader';
+import api from '@/api/client';
+import { Paginated, Premio } from '@/types/premio';
 
 interface Collaborator {
   id: number;
@@ -28,17 +30,20 @@ const PrizeDelivery = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCollaborator, setSelectedCollaborator] = useState<Collaborator | null>(null);
   const [deliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
-  const [selectedPrize, setSelectedPrize] = useState<any>(null);
+  const [selectedPrize, setSelectedPrize] = useState<Premio | null>(null);
   const [deliverySuccess, setDeliverySuccess] = useState(false);
-  
-  // Demo data for prizes
-  const prizes = [
-    { id: 1, name: 'Gorra deportiva', image: '/placeholder.svg', cost: 60 },
-    { id: 2, name: 'Pachón reutilizable', image: '/placeholder.svg', cost: 80 },
-    { id: 3, name: 'Camiseta SanjerFit', image: '/placeholder.svg', cost: 120 },
-    { id: 4, name: 'Snack saludable', image: '/placeholder.svg', cost: 40 },
-    { id: 5, name: 'Membresía Gym (1 mes)', image: '/placeholder.svg', cost: 250, requiresApproval: true },
-  ];
+  const [prizes, setPrizes] = useState<Premio[]>([]);
+
+  const fetchPrizes = useCallback(async () => {
+    try {
+      const res = await api.get<Paginated<Premio>>('/webadmin/premios');
+      setPrizes(res.data.data.filter(p => p.is_active && p.stock > 0));
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudieron cargar los premios' });
+    }
+  }, [toast]);
+
+  useEffect(() => { fetchPrizes(); }, [fetchPrizes]);
   
   // Demo data for collaborators
   const collaborators: Collaborator[] = [
@@ -56,24 +61,30 @@ const PrizeDelivery = () => {
     setSearchTerm('');
   };
   
-  const handlePrizeDelivery = (prize: any) => {
+  const handlePrizeDelivery = (prize: Premio) => {
     setSelectedPrize(prize);
     setDeliveryDialogOpen(true);
   };
-  
-  const confirmDelivery = () => {
-    setDeliverySuccess(true);
-    
-    // Reset after showing success animation
-    setTimeout(() => {
-      setDeliverySuccess(false);
-      setDeliveryDialogOpen(false);
-      
-      toast({
-        title: "Premio registrado",
-        description: "La entrega del premio ha sido registrada correctamente",
+
+  const confirmDelivery = async () => {
+    if (!selectedPrize || !selectedCollaborator) return;
+    try {
+      await api.post(`/webadmin/premios/${selectedPrize.id}/deliver`, {
+        collaborator_id: selectedCollaborator.id,
       });
-    }, 2000);
+      setDeliverySuccess(true);
+      setTimeout(() => {
+        setDeliverySuccess(false);
+        setDeliveryDialogOpen(false);
+        toast({
+          title: 'Premio registrado',
+          description: 'La entrega del premio ha sido registrada correctamente',
+        });
+        fetchPrizes();
+      }, 2000);
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudo registrar la entrega' });
+    }
   };
 
   return (
@@ -151,26 +162,22 @@ const PrizeDelivery = () => {
             <Card key={prize.id} className="overflow-hidden">
               <div className="h-40 bg-sanjer-lightgray flex items-center justify-center">
                 <img 
-                  src={prize.image} 
-                  alt={prize.name}
+                  src={prize.image_url || prize.image_path || '/placeholder.svg'}
+                  alt={prize.nombre}
                   className="h-32 object-contain"
                 />
               </div>
               
               <div className="p-4">
-                <h4 className="font-semibold mb-2">{prize.name}</h4>
-                <p className="text-sm text-muted-foreground mb-4">{prize.cost} CoinFits</p>
-                <Button 
+                <h4 className="font-semibold mb-2">{prize.nombre}</h4>
+                <p className="text-sm text-muted-foreground mb-4">{prize.costo_fitcoins} CoinFits</p>
+                <Button
                   onClick={() => handlePrizeDelivery(prize)}
                   className="w-full bg-sanjer-green hover:bg-green-600"
-                  disabled={!selectedCollaborator || selectedCollaborator.coins < prize.cost}
+                  disabled={!selectedCollaborator || selectedCollaborator.coins < prize.costo_fitcoins}
                 >
                   Registrar Premio
                 </Button>
-                
-                {prize.requiresApproval && (
-                  <p className="mt-2 text-xs text-amber-600">Requiere aprobación</p>
-                )}
               </div>
             </Card>
           ))}
@@ -252,20 +259,20 @@ const PrizeDelivery = () => {
                       <Award className="h-5 w-5" />
                     </div>
                     <div>
-                      <h4 className="font-medium">{selectedPrize.name}</h4>
-                      <span className="text-sm text-gray-600">
-                        Costo: <span className="font-medium">{selectedPrize.cost} CoinFits</span>
-                      </span>
+                        <h4 className="font-medium">{selectedPrize.nombre}</h4>
+                        <span className="text-sm text-gray-600">
+                          Costo: <span className="font-medium">{selectedPrize.costo_fitcoins} CoinFits</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-md">
+                      <p className="text-sm text-blue-800">
+                        Después de esta operación, el colaborador tendrá <span className="font-bold">{selectedCollaborator.coins - selectedPrize.costo_fitcoins} CoinFits</span> disponibles.
+                      </p>
                     </div>
                   </div>
-                  
-                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-md">
-                    <p className="text-sm text-blue-800">
-                      Después de esta operación, el colaborador tendrá <span className="font-bold">{selectedCollaborator.coins - selectedPrize.cost} CoinFits</span> disponibles.
-                    </p>
-                  </div>
-                </div>
-              )}
+                )}
               
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDeliveryDialogOpen(false)}>
