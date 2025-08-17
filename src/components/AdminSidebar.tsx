@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, Shield, Home, BookOpen } from 'lucide-react';
+import { Users, Shield, Home, BookOpen, Gift } from 'lucide-react';
 import SanjerLogo from './SanjerLogo';
 
 type MenuItem = {
@@ -34,6 +34,18 @@ const AdminSidebar = () => {
         { title: "Registrar Colaborador", path: "/usuarios/registrar" },
         { title: "Gestionar Colaboradores", path: "/usuarios/gestionar" },
         { title: "Notificaciones", path: "/usuarios/notificaciones" },
+      ],
+    },
+    {
+      icon: <Gift className="h-5 w-5" />,
+      title: "Premios",
+      path: "/premios",
+      description: "Catálogo de premios",
+      clickable: false,
+      subItems: [
+        { title: "Catálogo", path: "/premios" },
+        { title: "Entregar premio", path: "/premios/entregar" },
+        { title: "Inventario", path: "/premios/inventario" },
       ],
     },
     {
