@@ -6,6 +6,7 @@ import PremioFormModal from '@/components/premios/PremioFormModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { notifyError, notifySuccess } from '@/utils/notifications';
 
+
 type StatusFilter = 'todos' | 'activos' | 'inactivos';
 
 export default function PremiosPage() {
@@ -60,6 +61,7 @@ export default function PremiosPage() {
   const openCreate = () => { setCurrent(null); setModalMode('create'); setModalOpen(true); };
   const openEdit = (p: Premio) => { setCurrent(p); setModalMode('edit'); setModalOpen(true); };
   const openView = (p: Premio) => { setCurrent(p); setModalMode('view'); setModalOpen(true); };
+
 
   const createItem = async (payload: FormData | Record<string, any>) => {
     setSubmitting(true);
@@ -145,7 +147,6 @@ export default function PremiosPage() {
     }
     setConfirm((c) => ({ ...c, open: false }));
   };
-
   return (
     <div className="p-6 space-y-6">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
