@@ -50,7 +50,11 @@ export default function PremiosPage() {
       setItems(data);
       setMeta({ total: res.data.total, last_page: res.data.last_page });
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Error cargando premios');
+
+      const data = e?.response?.data;
+      console.error('fetchList error', data);
+      setError(data?.message ?? 'Error cargando premios');
+
     } finally {
       setLoading(false);
     }
@@ -72,7 +76,13 @@ export default function PremiosPage() {
       setModalOpen(false);
       await fetchList();
     } catch (e: any) {
-      notifyError(e?.response?.data?.message ?? 'Error al crear premio');
+
+      const data = e?.response?.data;
+      console.error('422 DETAILS', data);
+      const firstFieldError =
+        data?.errors && (Object.values<string[]>(data.errors)[0]?.[0]);
+      notifyError(firstFieldError || data?.message || 'Error al crear premio');
+
     } finally {
       setSubmitting(false);
     }
@@ -84,13 +94,18 @@ export default function PremiosPage() {
     try {
 
       await api.put(`/webadmin/premios/${current.id}`, payload);
-
       notifySuccess('Premio actualizado');
       setModalOpen(false);
       setCurrent(null);
       await fetchList();
     } catch (e: any) {
-      notifyError(e?.response?.data?.message ?? 'Error al actualizar premio');
+
+      const data = e?.response?.data;
+      console.error('422 DETAILS', data);
+      const firstFieldError =
+        data?.errors && (Object.values<string[]>(data.errors)[0]?.[0]);
+      notifyError(firstFieldError || data?.message || 'Error al actualizar premio');
+
     } finally {
       setSubmitting(false);
     }
@@ -110,6 +125,9 @@ export default function PremiosPage() {
           notifySuccess('Estado actualizado');
           await fetchList();
         } catch (e: any) {
+
+          console.error('toggleItem error', e?.response?.data || e);
+
           notifyError(e?.response?.data?.message ?? 'No se pudo actualizar el estado');
         }
       },
@@ -128,6 +146,9 @@ export default function PremiosPage() {
           notifySuccess('Premio eliminado');
           await fetchList();
         } catch (e: any) {
+
+          console.error('deleteItem error', e?.response?.data || e);
+
           notifyError(e?.response?.data?.message ?? 'No se pudo eliminar');
         }
       },
@@ -238,5 +259,6 @@ export default function PremiosPage() {
       />
     </div>
   );
+
 }
 
