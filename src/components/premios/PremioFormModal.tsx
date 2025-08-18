@@ -79,59 +79,95 @@ export default function PremioFormModal({ open, mode, initial, submitting, onSub
 
         <form
           className="space-y-4"
+          // Reemplaza la parte del handleSubmit en tu PremioFormModal.tsx
+
           onSubmit={handleSubmit(async (data) => {
             if (readOnly) return;
+
+            // Convertir valores numéricos
             data.costo_fitcoins = Number(data.costo_fitcoins);
             data.stock = Number(data.stock);
 
-            data.is_active = data.is_active === true;
-
-            const base: Record<string, any> = { ...data };
+            // Normalizar boolean
+            const isActive = data.is_active === true || data.is_active === '1';
 
             if (mode === 'create') {
               if (imageMode === 'file' && file) {
+                // Crear FormData para archivo
                 const fd = new FormData();
-                Object.entries(base).forEach(([k, v]) => {
-                  if (k === 'is_active') {
-                    fd.append(k, v ? '1' : '0');
-                  } else {
-                    fd.append(k, String(v));
-                  }
+                fd.append('nombre', data.nombre);
+                fd.append('descripcion', data.descripcion || '');
+                fd.append('costo_fitcoins', String(data.costo_fitcoins));
+                fd.append('stock', String(data.stock));
+                fd.append('is_active', isActive ? '1' : '0');
+                fd.append('image', file, file.name); // Importante: incluir el nombre del archivo
+
+                console.log('Enviando FormData con archivo:', {
+                  nombre: data.nombre,
+                  file: file.name,
+                  fileType: file.type,
+                  fileSize: file.size
                 });
-                fd.append('image', file);
+
                 await onSubmit(fd);
               } else if (imageMode === 'url' && url) {
-                await onSubmit({ ...base, image_path: url });
+                // Enviar como JSON con URL
+                await onSubmit({
+                  nombre: data.nombre,
+                  descripcion: data.descripcion || null,
+                  costo_fitcoins: data.costo_fitcoins,
+                  stock: data.stock,
+                  is_active: isActive,
+                  image_path: url
+                });
               } else {
-                await onSubmit(base);
+                // Sin imagen
+                await onSubmit({
+                  nombre: data.nombre,
+                  descripcion: data.descripcion || null,
+                  costo_fitcoins: data.costo_fitcoins,
+                  stock: data.stock,
+                  is_active: isActive
+                });
               }
             } else if (mode === 'edit') {
               if (removeImage) {
                 const fd = new FormData();
-                Object.entries(base).forEach(([k, v]) => {
-                  if (k === 'is_active') {
-                    fd.append(k, v ? '1' : '0');
-                  } else {
-                    fd.append(k, String(v));
-                  }
-                });
-                fd.append('remove_image', 'true');
+                fd.append('nombre', data.nombre);
+                fd.append('descripcion', data.descripcion || '');
+                fd.append('costo_fitcoins', String(data.costo_fitcoins));
+                fd.append('stock', String(data.stock));
+                fd.append('is_active', isActive ? '1' : '0');
+                fd.append('remove_image', '1');
+                fd.append('_method', 'PUT'); // Para Laravel
                 await onSubmit(fd);
               } else if (imageMode === 'file' && file) {
                 const fd = new FormData();
-                Object.entries(base).forEach(([k, v]) => {
-                  if (k === 'is_active') {
-                    fd.append(k, v ? '1' : '0');
-                  } else {
-                    fd.append(k, String(v));
-                  }
-                });
-                fd.append('image', file);
+                fd.append('nombre', data.nombre);
+                fd.append('descripcion', data.descripcion || '');
+                fd.append('costo_fitcoins', String(data.costo_fitcoins));
+                fd.append('stock', String(data.stock));
+                fd.append('is_active', isActive ? '1' : '0');
+                fd.append('image', file, file.name);
+                fd.append('_method', 'PUT'); // Para Laravel
                 await onSubmit(fd);
               } else if (imageMode === 'url' && url && url !== initial?.image_url) {
-                await onSubmit({ ...base, image_path: url });
+                await onSubmit({
+                  nombre: data.nombre,
+                  descripcion: data.descripcion || null,
+                  costo_fitcoins: data.costo_fitcoins,
+                  stock: data.stock,
+                  is_active: isActive,
+                  image_path: url
+                });
               } else {
-                await onSubmit(base);
+                await onSubmit({
+                  nombre: data.nombre,
+                  descripcion: data.descripcion || null,
+                  costo_fitcoins: data.costo_fitcoins,
+                  stock: data.stock,
+                  is_active: isActive
+                });
               }
             }
           })}

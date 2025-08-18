@@ -22,7 +22,7 @@ export default function ImagePicker({
   onFileChange,
   onUrlChange,
   onRemove,
-  maxSizeMB = 2,
+  maxSizeMB = 10,
   accept = 'image/jpeg,image/png,image/webp',
 }: ImagePickerProps) {
   const [error, setError] = useState<string>('');
