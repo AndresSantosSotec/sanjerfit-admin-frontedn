@@ -74,6 +74,13 @@ const AdminSidebar = ({
       clickable: true,
     },
     {
+      icon: <Trophy className="h-5 w-5" />,
+      title: "Reportes",
+      path: "/reportes",
+      description: "Estadísticas y rankings",
+      clickable: true,
+    },
+    {
       icon: <BookOpen className="h-5 w-5" />,
       title: "Información",
       path: "/informacion-general",
