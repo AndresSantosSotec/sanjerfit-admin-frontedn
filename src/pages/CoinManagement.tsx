@@ -13,6 +13,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { api } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
+import { Search, ChevronLeft, ChevronRight, Coins, Calendar, History, ShieldAlert, RefreshCw } from 'lucide-react';
 
 type CollaboratorRow = {
   id: number;
@@ -54,6 +55,11 @@ const CoinManagement = () => {
   const [campaignStart, setCampaignStart] = useState('');
   const [campaignEnd, setCampaignEnd] = useState('');
   const [campaignActive, setCampaignActive] = useState<'true' | 'false'>('false');
+
+  // Filtros y Paginación para Saldos
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const loadData = async () => {
     setLoading(true);
@@ -164,88 +170,120 @@ const CoinManagement = () => {
     }
   };
 
+  // Filtrado de la tabla de saldos
+  const filteredCollabs = collaborators.filter(c => 
+    c.nombre.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Paginación
+  const totalPages = Math.max(1, Math.ceil(filteredCollabs.length / itemsPerPage));
+  const paginatedCollabs = filteredCollabs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
-    <div className="flex flex-col h-full">
-      <AdminHeader title="Monedas y Campañas" subtitle="Deducciones, reinicios y temporadas" />
+    <div className="flex flex-col h-full bg-slate-50/30 dark:bg-slate-900/10">
+      <AdminHeader title="Monedas y Campañas" subtitle="Ajustes de CoinFits, deducciones por incidencias y temporadas de retos" />
+      
       <div className="p-6 space-y-6">
+        
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <Card className="glass-card shadow-sm rounded-2xl">
-            <CardHeader>
-              <CardTitle>Ajuste de Monedas</CardTitle>
+          
+          {/* Card 1: Ajuste de Monedas */}
+          <Card className="glass-card shadow-sm rounded-2xl border-slate-100 dark:border-slate-800">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-2">
+                <Coins className="h-5 w-5 text-amber-500" />
+                <CardTitle className="text-base font-semibold text-slate-700 dark:text-slate-300">Ajuste de Monedas (Fitcoins)</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <form className="space-y-4" onSubmit={submitTransaction}>
-                <div>
-                  <label className="text-sm font-medium">Colaborador</label>
+                
+                {/* Colaborador Autocomplete */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Seleccionar Colaborador:</label>
                   <div className="relative">
                     <Input
                       type="text"
-                      placeholder="Buscar colaborador por nombre..."
+                      placeholder="Escribe para buscar por nombre..."
                       value={collaborators.find(c => String(c.id) === colaboratorId)?.nombre && !coinSearchTerm ? collaborators.find(c => String(c.id) === colaboratorId)!.nombre : coinSearchTerm}
                       onChange={(e) => {
                         setCoinSearchTerm(e.target.value);
                         if (!e.target.value) setColaboratorId('');
                       }}
                       onFocus={() => setCoinDropdownOpen(true)}
-                      className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                      className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-xl"
                     />
+                    
                     {coinDropdownOpen && coinSearchTerm.length >= 1 && (
-                      <div className="absolute w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-xl z-10 max-h-48 overflow-y-auto">
+                      <div className="absolute w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl z-20 max-h-48 overflow-y-auto">
                         {collaborators
                           .filter(c => c.nombre.toLowerCase().includes(coinSearchTerm.toLowerCase()))
                           .map(c => (
                             <div
                               key={c.id}
-                              className="px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer flex items-center justify-between transition-colors text-slate-800 dark:text-slate-200 text-sm"
+                              className="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer flex items-center justify-between transition-colors text-slate-800 dark:text-slate-200 text-sm"
                               onClick={() => {
                                 setColaboratorId(String(c.id));
                                 setCoinSearchTerm('');
                                 setCoinDropdownOpen(false);
                               }}
                             >
-                              <span className="font-medium">{c.nombre}</span>
-                              <span className="text-xs text-sanjer-green font-semibold">{c.coin_fits ?? 0} CF</span>
+                              <span className="font-semibold">{c.nombre}</span>
+                              <span className="text-xs text-amber-500 font-bold">{c.coin_fits ?? 0} CF</span>
                             </div>
                           ))}
                         {collaborators.filter(c => c.nombre.toLowerCase().includes(coinSearchTerm.toLowerCase())).length === 0 && (
-                          <div className="px-3 py-3 text-sm text-slate-400 dark:text-slate-500 text-center">
+                          <div className="px-3 py-3 text-sm text-slate-400 dark:text-slate-500 text-center font-medium">
                             No se encontraron colaboradores
                           </div>
                         )}
                       </div>
                     )}
-                    {colaboratorId && !coinSearchTerm && (
-                      <p className="text-xs text-sanjer-green mt-1 font-medium">
-                        Seleccionado: {collaborators.find(c => String(c.id) === colaboratorId)?.nombre}
-                      </p>
-                    )}
                   </div>
+                  {colaboratorId && !coinSearchTerm && (
+                    <div className="flex items-center gap-1.5 mt-1 bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30 px-3 py-1.5 rounded-lg w-fit">
+                      <span className="w-1.5 h-1.5 rounded-full bg-sanjer-green"></span>
+                      <p className="text-xs text-sanjer-green font-semibold">
+                        Seleccionado: {collaborators.find(c => String(c.id) === colaboratorId)?.nombre} ({collaborators.find(c => String(c.id) === colaboratorId)?.coin_fits ?? 0} CF actuales)
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Tipo</label>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Tipo de Movimiento:</label>
                     <Select value={type} onValueChange={(v) => setType(v as 'debit' | 'credit')}>
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="debit">Deducción</SelectItem>
-                        <SelectItem value="credit">Crédito</SelectItem>
+                        <SelectItem value="debit">Deducción (-)</SelectItem>
+                        <SelectItem value="credit">Crédito (+)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">Monto</label>
-                    <Input type="number" min="1" value={amount} onChange={e => setAmount(e.target.value)} required />
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Monto de CoinFits:</label>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      value={amount} 
+                      onChange={e => setAmount(e.target.value)} 
+                      required 
+                      className="rounded-xl text-right font-extrabold text-amber-500"
+                    />
                   </div>
                 </div>
 
                 {type === 'debit' && (
-                  <div>
-                    <label className="text-sm font-medium">Motivo de deducción</label>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Motivo de la deducción:</label>
                     <Select value={reasonCode} onValueChange={setReasonCode}>
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -257,10 +295,10 @@ const CoinManagement = () => {
                   </div>
                 )}
 
-                <div>
-                  <label className="text-sm font-medium">Campaña/Temporada</label>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Campaña / Temporada del movimiento:</label>
                   <Select value={campaignId} onValueChange={setCampaignId}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl">
                       <SelectValue placeholder="Campaña activa o sin campaña" />
                     </SelectTrigger>
                     <SelectContent>
@@ -273,126 +311,273 @@ const CoinManagement = () => {
                   </Select>
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium">Descripción</label>
-                  <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Detalles de la incidencia o ajuste" />
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Descripción / Observaciones:</label>
+                  <Input 
+                    value={description} 
+                    onChange={e => setDescription(e.target.value)} 
+                    placeholder="Detalles de la deducción, ej. Actividades repetidas el lunes" 
+                    className="rounded-xl"
+                  />
                 </div>
 
-                <div className="flex gap-3">
-                  <Button type="submit" className="bg-sanjer-green hover:bg-green-600">Guardar movimiento</Button>
-                  <Button type="button" variant="destructive" onClick={resetAllPoints}>Reiniciar puntos globales</Button>
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <Button type="submit" className="flex-1 bg-sanjer-green hover:bg-sanjer-green/90 text-white rounded-xl">
+                    Guardar Movimiento
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={resetAllPoints} 
+                    className="border-red-200 hover:bg-red-50 text-red-600 dark:hover:bg-red-950/20 dark:border-red-900/30 rounded-xl"
+                  >
+                    <ShieldAlert className="h-4 w-4 mr-2" />
+                    Reiniciar Puntos Globales
+                  </Button>
                 </div>
               </form>
             </CardContent>
           </Card>
 
-          <Card className="glass-card shadow-sm rounded-2xl">
-            <CardHeader>
-              <CardTitle>Nueva Campaña</CardTitle>
+          {/* Card 2: Nueva Campaña */}
+          <Card className="glass-card shadow-sm rounded-2xl border-slate-100 dark:border-slate-800">
+            <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-sanjer-blue" />
+                <CardTitle className="text-base font-semibold text-slate-700 dark:text-slate-300">Nueva Campaña / Temporada</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <form className="space-y-4" onSubmit={createCampaign}>
-                <div>
-                  <label className="text-sm font-medium">Nombre</label>
-                  <Input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="Temporada Julio 2026" required />
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Nombre de la temporada:</label>
+                  <Input 
+                    value={campaignName} 
+                    onChange={e => setCampaignName(e.target.value)} 
+                    placeholder="Ej. Temporada Invierno 2026" 
+                    required 
+                    className="rounded-xl"
+                  />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Inicio</label>
-                    <Input type="date" value={campaignStart} onChange={e => setCampaignStart(e.target.value)} required />
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Fecha de Inicio:</label>
+                    <Input type="date" value={campaignStart} onChange={e => setCampaignStart(e.target.value)} required className="rounded-xl" />
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">Fin</label>
-                    <Input type="date" value={campaignEnd} onChange={e => setCampaignEnd(e.target.value)} />
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Fecha de Fin (Opcional):</label>
+                    <Input type="date" value={campaignEnd} onChange={e => setCampaignEnd(e.target.value)} className="rounded-xl" />
                   </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Estado</label>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Estado de lanzamiento:</label>
                   <Select value={campaignActive} onValueChange={(v) => setCampaignActive(v as 'true' | 'false')}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="false">Guardar como inactiva</SelectItem>
-                      <SelectItem value="true">Guardar como activa</SelectItem>
+                      <SelectItem value="false">Guardar como inactiva (Próximamente)</SelectItem>
+                      <SelectItem value="true">Activar inmediatamente</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" className="bg-sanjer-blue hover:bg-blue-600">Crear campaña</Button>
+                <Button type="submit" className="w-full bg-sanjer-blue hover:bg-sanjer-blue/90 text-white rounded-xl mt-2">
+                  Crear e Inicializar Campaña
+                </Button>
               </form>
             </CardContent>
           </Card>
+
         </div>
 
-        <Card className="glass-card shadow-sm rounded-2xl">
-          <CardHeader>
-            <CardTitle>Saldos Actuales</CardTitle>
+        {/* Card 3: Saldos Actuales (Con paginación y filtros) */}
+        <Card className="glass-card shadow-sm rounded-2xl border-slate-100 dark:border-slate-800">
+          <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-amber-500" />
+              <CardTitle className="text-base font-semibold text-slate-700 dark:text-slate-300">Saldos Actuales de Colaboradores</CardTitle>
+            </div>
+            
+            {/* Filtro de búsqueda */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Buscar colaborador..."
+                className="pl-9 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs rounded-xl"
+              />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {loading ? (
-              <p className="text-sm text-slate-500">Cargando...</p>
+              <div className="p-8 text-center text-slate-400">
+                <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-sanjer-green" />
+                Cargando información de saldos...
+              </div>
+            ) : paginatedCollabs.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 font-semibold">
+                No se encontraron saldos de colaboradores.
+              </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Colaborador</TableHead>
-                    <TableHead>CoinFits</TableHead>
-                    <TableHead>Campaña activa</TableHead>
-                    <TableHead className="text-right">Acción</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {collaborators.map(c => (
-                    <TableRow key={c.id}>
-                      <TableCell>{c.nombre}</TableCell>
-                      <TableCell>{c.coin_fits ?? 0}</TableCell>
-                      <TableCell>{campaigns.find(x => x.is_active)?.name || 'Sin campaña activa'}</TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="outline" onClick={() => setColaboratorId(String(c.id))}>
-                          Seleccionar
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <>
+                <div className="relative w-full overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 text-slate-400 text-xs uppercase font-semibold">
+                        <th className="h-12 px-6 text-left align-middle pl-8">Colaborador</th>
+                        <th className="h-12 px-6 text-left align-middle">Saldo en CoinFits</th>
+                        <th className="h-12 px-6 text-left align-middle">Temporada Vigente</th>
+                        <th className="h-12 px-6 text-right align-middle pr-8">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedCollabs.map(c => (
+                        <tr key={c.id} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                          <td className="p-4 px-6 align-middle font-medium text-slate-800 dark:text-slate-100 pl-8">{c.nombre}</td>
+                          <td className="p-4 px-6 align-middle font-bold text-amber-500">{c.coin_fits ?? 0} CF</td>
+                          <td className="p-4 px-6 align-middle text-slate-500 dark:text-slate-400">
+                            {campaigns.find(x => x.is_active)?.name || 'Sin campaña activa'}
+                          </td>
+                          <td className="p-4 px-6 align-middle text-right pr-8">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => {
+                                setColaboratorId(String(c.id));
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                toast({
+                                  title: 'Colaborador seleccionado',
+                                  description: `Se seleccionó a ${c.nombre} para ajuste de puntos.`,
+                                });
+                              }}
+                              className="rounded-lg text-xs"
+                            >
+                              Seleccionar
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Controles de Paginación */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <p className="text-xs text-slate-400 font-medium">
+                      Mostrando {Math.min(filteredCollabs.length, (currentPage - 1) * itemsPerPage + 1)} a {Math.min(filteredCollabs.length, currentPage * itemsPerPage)} de {filteredCollabs.length} colaboradores
+                    </p>
+                    
+                    {/* Selector de cantidad por página */}
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Por pág:</span>
+                      <Select
+                        value={String(itemsPerPage)}
+                        onValueChange={(v) => {
+                          setItemsPerPage(Number(v));
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-20 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs rounded-lg">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => prev - 1)}
+                      className="h-8 w-8 rounded-lg"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                      Pág. {currentPage} de {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                      className="h-8 w-8 rounded-lg"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
 
-        <Card className="glass-card shadow-sm rounded-2xl">
-          <CardHeader>
-            <CardTitle>Temporadas/Campañas</CardTitle>
+        {/* Card 4: Temporadas/Campañas */}
+        <Card className="glass-card shadow-sm rounded-2xl border-slate-100 dark:border-slate-800">
+          <CardHeader className="border-b border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-slate-500" />
+              <CardTitle className="text-base font-semibold text-slate-700 dark:text-slate-300">Historial de Temporadas / Campañas</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Inicio</TableHead>
-                  <TableHead>Fin</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acción</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {campaigns.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell>{c.name}</TableCell>
-                    <TableCell>{c.start_date}</TableCell>
-                    <TableCell>{c.end_date || 'Abierta'}</TableCell>
-                    <TableCell>{c.is_active ? 'Activa' : 'Inactiva'}</TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="outline" disabled={c.is_active} onClick={() => activateCampaign(c.id)}>
-                        Activar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <CardContent className="p-0">
+            <div className="relative w-full overflow-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/20 text-slate-400 text-xs uppercase font-semibold">
+                    <th className="h-12 px-6 text-left pl-8">Nombre de Temporada</th>
+                    <th className="h-12 px-6 text-left">Fecha de Inicio</th>
+                    <th className="h-12 px-6 text-left">Fecha de Fin</th>
+                    <th className="h-12 px-6 text-center">Estado</th>
+                    <th className="h-12 px-6 text-right pr-8">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map(c => (
+                    <tr key={c.id} className="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="p-4 px-6 align-middle font-medium text-slate-800 dark:text-slate-100 pl-8">{c.name}</td>
+                      <td className="p-4 px-6 align-middle text-slate-600 dark:text-slate-400">{c.start_date}</td>
+                      <td className="p-4 px-6 align-middle text-slate-600 dark:text-slate-400">{c.end_date || 'En curso (Abierta)'}</td>
+                      <td className="p-4 px-6 align-middle text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${
+                          c.is_active 
+                            ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400' 
+                            : 'bg-slate-100 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400'
+                        }`}>
+                          {c.is_active ? 'Activa' : 'Inactiva'}
+                        </span>
+                      </td>
+                      <td className="p-4 px-6 align-middle text-right pr-8">
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          disabled={c.is_active} 
+                          onClick={() => activateCampaign(c.id)}
+                          className={`rounded-lg text-xs ${c.is_active ? 'bg-slate-100 text-slate-400' : 'bg-sanjer-blue hover:bg-sanjer-blue/90 text-white'}`}
+                        >
+                          Activar
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
+
       </div>
     </div>
   );
