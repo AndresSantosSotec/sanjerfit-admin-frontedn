@@ -6,6 +6,14 @@ interface Stats {
   total_coinfits: number;
   redeemed_items: number;
   level_distribution: Record<string, number>;
+  age_distribution: Record<string, number>;
+  active_campaign?: {
+    id: number;
+    name: string;
+    start_date: string;
+    end_date?: string | null;
+    is_active: boolean;
+  } | null;
   recent_activities: {
     id: number;
     exercise_type: string;

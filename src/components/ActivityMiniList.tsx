@@ -8,20 +8,25 @@ interface Item {
 }
 
 export default function ActivityMiniList({ list }: { list: Item[] }) {
+  if (!list || list.length === 0) {
+    return (
+      <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4">Sin actividad reciente</p>
+    );
+  }
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {list.map(item => (
-        <div key={item.id} className="flex items-center">
-          <div className="h-9 w-9 rounded-full bg-sanjer-blue flex items-center justify-center text-white mr-3">
-            {item.user.name.charAt(0)}
+        <div key={item.id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-sanjer-blue to-sanjer-green flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+            {item.user.name.charAt(0).toUpperCase()}
           </div>
-          <div>
-            <p className="text-sm font-medium">
-              <span className="font-bold">{item.user.name}</span>{' '}
-              registró{' '}
-              <span className="font-semibold">{item.exercise_type}</span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-tight truncate">
+              <span className="font-semibold">{item.user.name}</span>
+              <span className="text-slate-400 dark:text-slate-500 font-normal"> · </span>
+              <span className="text-sanjer-green font-semibold">{item.exercise_type}</span>
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
               {new Date(item.created_at).toLocaleString()}
             </p>
           </div>

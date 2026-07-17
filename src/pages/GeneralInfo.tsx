@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Plus, Edit, Trash2, Eye, Search } from 'lucide-react';
 import AdminHeader from '@/components/AdminHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,8 @@ const GeneralInfoPage: React.FC = () => {
   const [editing, setEditing] = useState<GeneralInfo | null>(null);
   const [detail, setDetail] = useState<GeneralInfo | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [infoSearch, setInfoSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [form, setForm] = useState<{
     title: string;
     content: string;
@@ -142,12 +144,50 @@ const GeneralInfoPage: React.FC = () => {
     });
   };
 
+  const uniqueCategories = useMemo(() => {
+    return Array.from(new Set(infos.map(i => i.category).filter(Boolean) as string[])).sort();
+  }, [infos]);
+
+  const filteredInfos = useMemo(() => {
+    return infos.filter(info => {
+      const q = infoSearch.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        info.title.toLowerCase().includes(q) ||
+        info.content.toLowerCase().includes(q);
+      const matchesCategory = !categoryFilter || info.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [infos, infoSearch, categoryFilter]);
+
   return (
     <div className="flex flex-col h-full">
       <AdminHeader title="Información General" subtitle="Mensajes para la app" />
       <div className="p-6 flex-1 space-y-6">
-        <div className="flex justify-end">
-          <Button className="bg-sanjer-green" onClick={openCreate}>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Input
+              type="text"
+              placeholder="Buscar por título o contenido..."
+              value={infoSearch}
+              onChange={(e) => setInfoSearch(e.target.value)}
+              className="pl-9 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          </div>
+          {uniqueCategories.length > 0 && (
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="rounded-xl border px-3 py-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-sanjer-green/50 transition-all text-sm"
+            >
+              <option value="">Todas las categorías</option>
+              {uniqueCategories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          )}
+          <Button className="bg-sanjer-green hover:bg-green-600 text-white font-semibold rounded-xl" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-2" /> Añadir
           </Button>
         </div>
@@ -171,7 +211,13 @@ const GeneralInfoPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {infos.map((info) => (
+                  {filteredInfos.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-6 text-center text-slate-400 dark:text-slate-500 text-sm">
+                        No se encontraron registros
+                      </td>
+                    </tr>
+                  ) : filteredInfos.map((info) => (
                     <tr key={info.id} className="border-t">
                       <td className="p-2 font-medium">{info.title}</td>
                       <td className="p-2">{info.content}</td>

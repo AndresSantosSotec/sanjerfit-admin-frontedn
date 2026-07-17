@@ -81,12 +81,32 @@ export const CollaboratorView = ({ isOpen, onClose, collaborator }: Collaborator
                   <span className="col-span-2">{collaborator.area}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
+                  <span className="text-gray-500 text-sm">Nacimiento:</span>
+                  <span className="col-span-2">{collaborator.birthDate || 'N/A'}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <span className="text-gray-500 text-sm">Edad:</span>
+                  <span className="col-span-2">{collaborator.age ?? 'N/A'}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
                   <span className="text-gray-500 text-sm">Teléfono:</span>
                   <span className="col-span-2">{collaborator.phone}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-gray-500 text-sm">Dirección:</span>
                   <span className="col-span-2">{collaborator.address}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <span className="text-gray-500 text-sm">Ingreso:</span>
+                  <span className="col-span-2">{collaborator.hireDate || 'N/A'}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <span className="text-gray-500 text-sm">Antigüedad:</span>
+                  <span className="col-span-2">
+                    {collaborator.yearsAtInstitution != null
+                      ? `${collaborator.yearsAtInstitution} años`
+                      : 'N/A'}
+                  </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-gray-500 text-sm">Última Actividad:</span>

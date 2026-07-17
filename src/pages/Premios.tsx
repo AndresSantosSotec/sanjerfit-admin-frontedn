@@ -35,16 +35,11 @@ export default function PremiosPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<Paginated<Premio>>('/webadmin/premios', { params: { page, limit, q: query || undefined } });
+      const res = await api.get<Paginated<Premio>>('/webadmin/premios', { params: { page, limit, search: query || undefined } });
       let data = res.data.data;
 
       if (status !== 'todos') {
         data = data.filter(p => status === 'activos' ? p.is_active : !p.is_active);
-      }
-
-      if (query) {
-        const q = query.toLowerCase();
-        data = data.filter(p => p.nombre.toLowerCase().includes(q));
       }
 
       setItems(data);
@@ -155,7 +150,7 @@ export default function PremiosPage() {
     });
   };
 
-  const headerTitle = useMemo(() => 'Premios (cards)', []);
+  const headerTitle = useMemo(() => 'Catálogo de Premios', []);
 
   const handleConfirm = async () => {
     if (confirm.action) {
@@ -165,28 +160,30 @@ export default function PremiosPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">{headerTitle}</h1>
-          <p className="text-sm text-gray-500">Gestiona el catálogo de premios de CoosajerFIT.</p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{headerTitle}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Gestiona el catálogo de premios de CoosajerFIT.</p>
         </div>
         <div className="flex gap-2">
-          <button className="px-4 py-2 rounded-lg bg-black text-white" onClick={openCreate}>+ Nuevo</button>
+          <button className="btn-glow-green text-white font-semibold rounded-xl text-sm px-4 py-2 flex items-center gap-1.5 transition-all duration-200" onClick={openCreate}>
+            + Nuevo Premio
+          </button>
         </div>
       </header>
 
-      <section className="bg-white rounded-xl border p-4">
+      <section className="glass-card shadow-sm rounded-2xl p-4">
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <input
               placeholder="Buscar por nombre…"
-              className="rounded-lg border px-3 py-2 w-72"
+              className="rounded-xl border px-3 py-2 w-72 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-sanjer-green/50 outline-none transition-all"
               value={query}
               onChange={(e)=>{ setQuery(e.target.value); setPage(1); }}
             />
             <select
-              className="rounded-lg border px-3 py-2"
+              className="rounded-xl border px-3 py-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-sanjer-green/50 transition-all"
               value={status}
               onChange={(e)=>{ setStatus(e.target.value as StatusFilter); setPage(1); }}
             >
@@ -196,9 +193,9 @@ export default function PremiosPage() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Ítems por pág:</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">Ítems por pág:</span>
             <select
-              className="rounded-lg border px-2 py-1"
+              className="rounded-xl border px-2 py-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-sanjer-green/50 transition-all"
               value={limit}
               onChange={(e)=>{ setLimit(Number(e.target.value)); setPage(1); }}
             >
@@ -209,10 +206,10 @@ export default function PremiosPage() {
       </section>
 
       <section>
-        {loading && <div className="text-center text-sm text-gray-600">Cargando…</div>}
-        {error && !loading && <div className="text-center text-sm text-red-600">{error}</div>}
+        {loading && <div className="text-center text-sm text-slate-500 dark:text-slate-400 py-6">Cargando…</div>}
+        {error && !loading && <div className="text-center text-sm text-red-650 dark:text-red-400 py-6">{error}</div>}
         {!loading && !error && items.length === 0 && (
-          <div className="text-center text-sm text-gray-600">Sin resultados</div>
+          <div className="text-center text-sm text-slate-500 dark:text-slate-400 py-6">Sin resultados</div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
@@ -229,13 +226,13 @@ export default function PremiosPage() {
         </div>
       </section>
 
-      <section className="flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="text-sm text-gray-600">{meta.total} registros • Página {page} de {meta.last_page}</div>
+      <section className="flex flex-col md:flex-row items-center justify-between gap-3 pt-4">
+        <div className="text-sm text-slate-500 dark:text-slate-400">{meta.total} registros • Página {page} de {meta.last_page}</div>
         <div className="flex items-center gap-2">
-          <button className="px-3 py-1.5 rounded-lg border disabled:opacity-50" disabled={page<=1} onClick={()=>setPage(page-1)}>
+          <button className="px-3 py-1.5 rounded-lg border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition-all duration-200" disabled={page<=1} onClick={()=>setPage(page-1)}>
             Anterior
           </button>
-          <button className="px-3 py-1.5 rounded-lg border disabled:opacity-50" disabled={page>=meta.last_page} onClick={()=>setPage(page+1)}>
+          <button className="px-3 py-1.5 rounded-lg border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-30 disabled:pointer-events-none transition-all duration-200" disabled={page>=meta.last_page} onClick={()=>setPage(page+1)}>
             Siguiente
           </button>
         </div>
@@ -261,4 +258,3 @@ export default function PremiosPage() {
   );
 
 }
-

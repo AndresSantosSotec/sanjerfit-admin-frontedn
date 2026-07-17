@@ -51,6 +51,11 @@ import { Collaborator } from '@/types/collaborator';
 interface BackendColaborator {
   id: number;
   nombre: string;
+  fecha_nacimiento?: string | null;
+  fecha_ingreso?: string | null;
+  edad?: number | null;
+  tiempo_laborando?: number | null;
+  grupo_edad?: '18-24' | '25-34' | '35-44' | '45-54' | '55+' | 'Sin clasificar';
   nickname?: string;
   telefono: string;
   area: string;
@@ -76,13 +81,18 @@ interface FilterState {
   search: string;
   area: string;
   level: string;
-  status: string;
+  ageGroup: string;
+  minAge: string;
+  maxAge: string;
+  hireDateFrom: string;
+  hireDateTo: string;
   bloodType: string;
 }
 
 // Tipo para ordenamiento
-type SortField = 'name' | 'email' | 'area' | 'level' | 'status' | 'coinFits' | 'lastActive';
+type SortField = 'name' | 'email' | 'area' | 'level' | 'age' | 'coinFits' | 'lastActive' | 'hireDate' | 'yearsAtInstitution';
 type SortOrder = 'asc' | 'desc';
+const ALL_OPTION = '__all__';
 
 export const ManageUsers: React.FC = () => {
   const { toast } = useToast();
@@ -117,7 +127,11 @@ export const ManageUsers: React.FC = () => {
     search: '',
     area: '',
     level: '',
-    status: '',
+    ageGroup: '',
+    minAge: '',
+    maxAge: '',
+    hireDateFrom: '',
+    hireDateTo: '',
     bloodType: ''
   });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -157,6 +171,11 @@ export const ManageUsers: React.FC = () => {
             id: String(col.id),
             name: col.nombre,
             nickname: (col as any).nickname ?? '',
+            birthDate: col.fecha_nacimiento ?? '',
+            hireDate: col.fecha_ingreso ?? '',
+            age: col.edad ?? undefined,
+            yearsAtInstitution: col.tiempo_laborando ?? undefined,
+            ageGroup: col.grupo_edad ?? 'Sin clasificar',
             email: col.user.email,
             phone: col.telefono,
             area: col.area,
@@ -205,15 +224,33 @@ export const ManageUsers: React.FC = () => {
     let filtered = collaborators.filter(c => {
       const matchesSearch = 
         (c.name ?? '').toLowerCase().includes(filters.search.toLowerCase()) ||
+        (c.nickname ?? '').toLowerCase().includes(filters.search.toLowerCase()) ||
         (c.email ?? '').toLowerCase().includes(filters.search.toLowerCase()) ||
         (c.phone ?? '').toLowerCase().includes(filters.search.toLowerCase());
       
       const matchesArea = !filters.area || c.area === filters.area;
       const matchesLevel = !filters.level || c.level === filters.level;
-      const matchesStatus = !filters.status || c.status === filters.status;
+      const matchesAgeGroup = !filters.ageGroup || c.ageGroup === filters.ageGroup;
+      const ageValue = c.age ?? -1;
+      const minAge = filters.minAge ? Number(filters.minAge) : null;
+      const maxAge = filters.maxAge ? Number(filters.maxAge) : null;
+      const matchesMinAge = minAge == null || ageValue >= minAge;
+      const matchesMaxAge = maxAge == null || ageValue <= maxAge;
+
+      const hireDate = c.hireDate || '';
+      const matchesHireDateFrom = !filters.hireDateFrom || (hireDate && hireDate >= filters.hireDateFrom);
+      const matchesHireDateTo = !filters.hireDateTo || (hireDate && hireDate <= filters.hireDateTo);
       const matchesBloodType = !filters.bloodType || c.bloodType === filters.bloodType;
 
-      return matchesSearch && matchesArea && matchesLevel && matchesStatus && matchesBloodType;
+      return matchesSearch
+        && matchesArea
+        && matchesLevel
+        && matchesAgeGroup
+        && matchesMinAge
+        && matchesMaxAge
+        && matchesHireDateFrom
+        && matchesHireDateTo
+        && matchesBloodType;
     });
 
     // Ordenar
@@ -227,10 +264,25 @@ export const ManageUsers: React.FC = () => {
         bValue = Number(bValue) || 0;
       }
 
+      if (sortField === 'age') {
+        aValue = Number(aValue) || 0;
+        bValue = Number(bValue) || 0;
+      }
+
       // Manejar fechas
       if (sortField === 'lastActive') {
         aValue = new Date(aValue || '1900-01-01');
         bValue = new Date(bValue || '1900-01-01');
+      }
+
+      if (sortField === 'hireDate') {
+        aValue = new Date(aValue || '1900-01-01');
+        bValue = new Date(bValue || '1900-01-01');
+      }
+
+      if (sortField === 'yearsAtInstitution') {
+        aValue = Number(aValue) || 0;
+        bValue = Number(bValue) || 0;
       }
 
       // Comparar
@@ -267,7 +319,11 @@ export const ManageUsers: React.FC = () => {
       search: '',
       area: '',
       level: '',
-      status: '',
+      ageGroup: '',
+      minAge: '',
+      maxAge: '',
+      hireDateFrom: '',
+      hireDateTo: '',
       bloodType: ''
     });
     setCurrentPage(1);
@@ -315,6 +371,8 @@ export const ManageUsers: React.FC = () => {
         const payload = {
           nombre: c.name,
           nickname: c.nickname,
+          fecha_nacimiento: c.birthDate || null,
+          fecha_ingreso: c.hireDate || null,
           sexo: (c as any).sexo,
           telefono: c.phone,
           direccion: c.address,
@@ -345,6 +403,11 @@ export const ManageUsers: React.FC = () => {
           id: String(data.id),
           name: data.nombre,
           nickname: (data as any).nickname ?? '',
+          birthDate: data.fecha_nacimiento ?? '',
+          hireDate: data.fecha_ingreso ?? '',
+          age: data.edad ?? undefined,
+          yearsAtInstitution: data.tiempo_laborando ?? undefined,
+          ageGroup: data.grupo_edad ?? 'Sin clasificar',
           email: data.user.email,
           phone: data.telefono,
           area: data.area,
@@ -373,6 +436,8 @@ export const ManageUsers: React.FC = () => {
         const payload = {
           nombre: c.name,
           nickname: c.nickname,
+          fecha_nacimiento: c.birthDate || null,
+          fecha_ingreso: c.hireDate || null,
           email: c.email,
           password: (c as any).password,
           password_confirmation: (c as any).passwordConfirmation,
@@ -405,6 +470,11 @@ export const ManageUsers: React.FC = () => {
           id: String(data.id),
           name: data.nombre,
           nickname: (data as any).nickname ?? '',
+          birthDate: data.fecha_nacimiento ?? '',
+          hireDate: data.fecha_ingreso ?? '',
+          age: data.edad ?? undefined,
+          yearsAtInstitution: data.tiempo_laborando ?? undefined,
+          ageGroup: data.grupo_edad ?? 'Sin clasificar',
           email: data.user.email,
           phone: data.telefono,
           area: data.area,
@@ -498,7 +568,7 @@ export const ManageUsers: React.FC = () => {
         <div className="p-6 flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sanjer-green mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando colaboradores...</p>
+            <p className="text-slate-500 dark:text-slate-400">Cargando colaboradores...</p>
           </div>
         </div>
       </div>
@@ -511,59 +581,75 @@ export const ManageUsers: React.FC = () => {
       <div className="p-6 flex-1">
         {/* Estadísticas rápidas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
+          <Card className="glass-card shadow-sm rounded-2xl">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Colaboradores</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Colaboradores</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-gray-900">{collaborators.length}</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{collaborators.length}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card shadow-sm rounded-2xl">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Activos</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">Edad Promedio</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-green-600">
-                {collaborators.filter(c => c.status === 'Activo').length}
+              <p className="text-2xl font-bold text-sanjer-green">
+                {(() => {
+                  const withAge = collaborators.filter(c => c.age != null);
+                  if (!withAge.length) return 0;
+                  return Math.round(withAge.reduce((acc, c) => acc + (c.age ?? 0), 0) / withAge.length);
+                })()}
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card shadow-sm rounded-2xl">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Inactivos</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">Antigüedad Promedio</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-red-600">
-                {collaborators.filter(c => c.status === 'Inactivo').length}
+              <p className="text-2xl font-bold text-red-500">
+                {(() => {
+                  const withTenure = collaborators.filter(c => c.yearsAtInstitution != null);
+                  if (!withTenure.length) return 0;
+                  return Math.round(withTenure.reduce((acc, c) => acc + (c.yearsAtInstitution ?? 0), 0) / withTenure.length);
+                })()}
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="glass-card shadow-sm rounded-2xl">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Áreas Únicas</CardTitle>
+              <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">Áreas Únicas</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-blue-600">{uniqueAreas.length}</p>
+              <p className="text-2xl font-bold text-sanjer-blue dark:text-blue-450">{uniqueAreas.length}</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="bg-white rounded-lg shadow">
+        <div className="glass-card shadow-sm rounded-2xl">
           {/* BARRA DE BÚSQUEDA Y FILTROS */}
-          <div className="p-6 border-b">
+          <div className="p-6 border-b border-slate-100 dark:border-slate-800">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
               <div className="relative flex-1 min-w-[200px] max-w-md">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Buscar por nombre, email o teléfono..."
                   value={filters.search}
                   onChange={e => handleFilterChange('search', e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Button onClick={openAddModal} className="bg-sanjer-green hover:bg-green-600">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowAdvancedFilters(prev => !prev)}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  {showAdvancedFilters ? 'Ocultar filtros' : 'Más filtros'}
+                </Button>
+                <Button onClick={openAddModal} className="bg-sanjer-green hover:bg-green-600 text-white">
                   <Plus className="h-4 w-4 mr-2" /> Añadir
                 </Button>
               </div>
@@ -571,15 +657,15 @@ export const ManageUsers: React.FC = () => {
 
             {/* FILTROS AVANZADOS */}
             {showAdvancedFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/50 rounded-xl mb-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Área</label>
-                  <Select value={filters.area} onValueChange={(value) => handleFilterChange('area', value)}>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Área</label>
+                  <Select value={filters.area || ALL_OPTION} onValueChange={(value) => handleFilterChange('area', value === ALL_OPTION ? '' : value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Todas las áreas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas las áreas</SelectItem>
+                      <SelectItem value={ALL_OPTION}>Todas las áreas</SelectItem>
                       {uniqueAreas.map(area => (
                         <SelectItem key={area} value={area}>{area}</SelectItem>
                       ))}
@@ -588,13 +674,13 @@ export const ManageUsers: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Nivel</label>
-                  <Select value={filters.level} onValueChange={(value) => handleFilterChange('level', value)}>
-                    <SelectTrigger>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Nivel</label>
+                  <Select value={filters.level || ALL_OPTION} onValueChange={(value) => handleFilterChange('level', value === ALL_OPTION ? '' : value)}>
+                    <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
                       <SelectValue placeholder="Todos los niveles" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Todos los niveles</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-800 dark:text-slate-105">
+                      <SelectItem value={ALL_OPTION}>Todos los niveles</SelectItem>
                       <SelectItem value="KoalaFit">KoalaFit</SelectItem>
                       <SelectItem value="JaguarFit">JaguarFit</SelectItem>
                       <SelectItem value="HalconFit">HalconFit</SelectItem>
@@ -603,32 +689,76 @@ export const ManageUsers: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Estado</label>
-                  <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos los estados" />
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Grupo de Edad</label>
+                  <Select value={filters.ageGroup || ALL_OPTION} onValueChange={(value) => handleFilterChange('ageGroup', value === ALL_OPTION ? '' : value)}>
+                    <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                      <SelectValue placeholder="Todos los grupos" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Todos los estados</SelectItem>
-                      <SelectItem value="Activo">Activo</SelectItem>
-                      <SelectItem value="Inactivo">Inactivo</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-800 dark:text-slate-105">
+                      <SelectItem value={ALL_OPTION}>Todos los grupos</SelectItem>
+                      <SelectItem value="18-24">18-24</SelectItem>
+                      <SelectItem value="25-34">25-34</SelectItem>
+                      <SelectItem value="35-44">35-44</SelectItem>
+                      <SelectItem value="45-54">45-54</SelectItem>
+                      <SelectItem value="55+">55+</SelectItem>
+                      <SelectItem value="Sin clasificar">Sin clasificar</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Tipo de Sangre</label>
-                  <Select value={filters.bloodType} onValueChange={(value) => handleFilterChange('bloodType', value)}>
-                    <SelectTrigger>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Tipo de Sangre</label>
+                  <Select value={filters.bloodType || ALL_OPTION} onValueChange={(value) => handleFilterChange('bloodType', value === ALL_OPTION ? '' : value)}>
+                    <SelectTrigger className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
                       <SelectValue placeholder="Todos los tipos" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Todos los tipos</SelectItem>
+                    <SelectContent className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-800 dark:text-slate-105">
+                      <SelectItem value={ALL_OPTION}>Todos los tipos</SelectItem>
                       {uniqueBloodTypes.map(type => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Edad mínima</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={filters.minAge}
+                    onChange={e => handleFilterChange('minAge', e.target.value)}
+                    placeholder="Ej. 25"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Edad máxima</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={filters.maxAge}
+                    onChange={e => handleFilterChange('maxAge', e.target.value)}
+                    placeholder="Ej. 45"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Ingreso desde</label>
+                  <Input
+                    type="date"
+                    value={filters.hireDateFrom}
+                    onChange={e => handleFilterChange('hireDateFrom', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Ingreso hasta</label>
+                  <Input
+                    type="date"
+                    value={filters.hireDateTo}
+                    onChange={e => handleFilterChange('hireDateTo', e.target.value)}
+                  />
                 </div>
 
                 <div className="md:col-span-4 flex justify-end">
@@ -641,11 +771,11 @@ export const ManageUsers: React.FC = () => {
             )}
 
             {/* INFORMACIÓN DE RESULTADOS */}
-            <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+            <div className="flex items-center justify-between mt-4 text-sm text-slate-600 dark:text-slate-400">
               <div>
                 Mostrando {startItem} - {endItem} de {totalItems} colaboradores
                 {Object.values(filters).some(filter => filter) && (
-                  <span className="ml-2 text-blue-600">(filtrado de {collaborators.length} total)</span>
+                  <span className="ml-2 text-sanjer-blue dark:text-blue-400 font-semibold">(filtrado de {collaborators.length} total)</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -654,10 +784,10 @@ export const ManageUsers: React.FC = () => {
                   setItemsPerPage(Number(value));
                   setCurrentPage(1);
                 }}>
-                  <SelectTrigger className="w-16">
+                  <SelectTrigger className="w-18 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-250">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-slate-805 border border-slate-100 dark:border-slate-700 text-slate-800 dark:text-slate-105">
                     <SelectItem value="5">5</SelectItem>
                     <SelectItem value="10">10</SelectItem>
                     <SelectItem value="25">25</SelectItem>
@@ -673,77 +803,100 @@ export const ManageUsers: React.FC = () => {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-slate-100 dark:border-slate-800 hover:bg-transparent">
                   <TableHead 
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
                     onClick={() => handleSort('name')}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 font-semibold">
                       Colaborador
-                      <ArrowUpDown className="h-4 w-4" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
                     onClick={() => handleSort('email')}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 font-semibold">
                       Correo
-                      <ArrowUpDown className="h-4 w-4" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
                     onClick={() => handleSort('area')}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 font-semibold">
                       Área
-                      <ArrowUpDown className="h-4 w-4" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
                     onClick={() => handleSort('level')}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 font-semibold">
                       Nivel
-                      <ArrowUpDown className="h-4 w-4" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleSort('status')}
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                    onClick={() => handleSort('age')}
                   >
-                    <div className="flex items-center gap-1">
-                      Estado
-                      <ArrowUpDown className="h-4 w-4" />
+                    <div className="flex items-center gap-1 font-semibold">
+                      Edad
+                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-slate-800 dark:text-slate-200">
+                    <div className="flex items-center gap-1 font-semibold">
+                      Grupo Edad
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                    onClick={() => handleSort('hireDate')}
+                  >
+                    <div className="flex items-center gap-1 font-semibold">
+                      Fecha Ingreso
+                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
+                    onClick={() => handleSort('yearsAtInstitution')}
+                  >
+                    <div className="flex items-center gap-1 font-semibold">
+                      Antigüedad
+                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
                     onClick={() => handleSort('coinFits')}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 font-semibold">
                       CoinFits
-                      <ArrowUpDown className="h-4 w-4" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200"
                     onClick={() => handleSort('lastActive')}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 font-semibold">
                       Última Actividad
-                      <ArrowUpDown className="h-4 w-4" />
+                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="text-right font-semibold text-slate-800 dark:text-slate-200">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {paginatedData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-10">
+                    <TableCell colSpan={11} className="text-center py-10">
                       <div className="text-gray-500">
                         {totalItems === 0 ? 'No hay colaboradores disponibles' : 'No hay resultados para los filtros aplicados'}
                       </div>
@@ -782,9 +935,16 @@ export const ManageUsers: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={c.status==='Activo'?'default':'secondary'}>
-                          {c.status}
-                        </Badge>
+                        <div className="text-sm font-medium">{c.age ?? 'N/A'}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{c.ageGroup || 'Sin clasificar'}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{c.hireDate || 'N/A'}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{c.yearsAtInstitution != null ? `${c.yearsAtInstitution} años` : 'N/A'}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -794,7 +954,7 @@ export const ManageUsers: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {c.lastActive || 'N/A'}
+                          <div>{c.lastActive || 'N/A'}</div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -823,9 +983,9 @@ export const ManageUsers: React.FC = () => {
 
           {/* PAGINACIÓN */}
           {totalPages > 1 && (
-            <div className="p-6 border-t">
+            <div className="p-6 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-slate-500 dark:text-slate-400">
                   Página {currentPage} de {totalPages}
                 </div>
                 
@@ -836,7 +996,7 @@ export const ManageUsers: React.FC = () => {
                     size="icon"
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="h-8 w-8"
+                    className="h-8 w-8 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -845,13 +1005,13 @@ export const ManageUsers: React.FC = () => {
                   {getPageNumbers().map((pageNum, index) => (
                     <React.Fragment key={index}>
                       {pageNum === '...' ? (
-                        <span className="px-2 text-gray-400">...</span>
+                        <span className="px-2 text-slate-400 dark:text-slate-600">...</span>
                       ) : (
                         <Button
                           variant={currentPage === pageNum ? "default" : "outline"}
                           size="icon"
                           onClick={() => goToPage(Number(pageNum))}
-                          className="h-8 w-8"
+                          className={`h-8 w-8 ${currentPage === pageNum ? 'bg-sanjer-green hover:bg-green-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                         >
                           {pageNum}
                         </Button>
@@ -865,13 +1025,13 @@ export const ManageUsers: React.FC = () => {
                     size="icon"
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="h-8 w-8"
+                    className="h-8 w-8 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
 
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-slate-500 dark:text-slate-400">
                   {startItem}-{endItem} de {totalItems}
                 </div>
               </div>
@@ -883,6 +1043,7 @@ export const ManageUsers: React.FC = () => {
                   size="sm"
                   onClick={() => goToPage(1)}
                   disabled={currentPage === 1}
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 >
                   Primera
                 </Button>
@@ -891,6 +1052,7 @@ export const ManageUsers: React.FC = () => {
                   size="sm"
                   onClick={() => goToPage(Math.max(1, currentPage - 5))}
                   disabled={currentPage <= 5}
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 >
                   -5
                 </Button>
@@ -899,6 +1061,7 @@ export const ManageUsers: React.FC = () => {
                   size="sm"
                   onClick={() => goToPage(Math.min(totalPages, currentPage + 5))}
                   disabled={currentPage >= totalPages - 4}
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 >
                   +5
                 </Button>
@@ -907,6 +1070,7 @@ export const ManageUsers: React.FC = () => {
                   size="sm"
                   onClick={() => goToPage(totalPages)}
                   disabled={currentPage === totalPages}
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 >
                   Última
                 </Button>

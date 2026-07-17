@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AdminHeader from '@/components/AdminHeader';
@@ -32,6 +33,25 @@ const departmentData = [
 const Reports = () => {
   const { toast } = useToast();
   const [timeFrame, setTimeFrame] = useState("month");
+  const [reportSearch, setReportSearch] = useState('');
+
+  const topCollaborators = [
+    { name: "Ana Gutiérrez", level: "HalcónFit", days: 28, coins: 850, prizes: 2 },
+    { name: "Carlos Mendez", level: "JaguarFit", days: 25, coins: 720, prizes: 1 },
+    { name: "Mariana López", level: "JaguarFit", days: 24, coins: 690, prizes: 2 },
+    { name: "Roberto Sánchez", level: "HalcónFit", days: 23, coins: 650, prizes: 1 },
+    { name: "Juan Pérez", level: "KoalaFit", days: 20, coins: 520, prizes: 1 },
+  ];
+
+  const filteredTopCollaborators = topCollaborators.filter(item => {
+    const q = reportSearch.trim().toLowerCase();
+    return !q || item.name.toLowerCase().includes(q) || item.level.toLowerCase().includes(q);
+  });
+
+  const filteredDepartments = departmentData.filter(dept => {
+    const q = reportSearch.trim().toLowerCase();
+    return !q || dept.name.toLowerCase().includes(q);
+  });
   
   const handleDownload = (reportType: string) => {
     toast({
@@ -62,6 +82,14 @@ const Reports = () => {
             </TabsList>
             
             <div className="flex items-center space-x-4">
+              <div className="relative">
+                <Input
+                  value={reportSearch}
+                  onChange={(e) => setReportSearch(e.target.value)}
+                  placeholder="Buscar colaborador o departamento..."
+                  className="w-72"
+                />
+              </div>
               <Select 
                 defaultValue={timeFrame} 
                 onValueChange={setTimeFrame}
@@ -161,13 +189,7 @@ const Reports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {[
-                        { name: "Ana Gutiérrez", level: "HalcónFit", days: 28, coins: 850, prizes: 2 },
-                        { name: "Carlos Mendez", level: "JaguarFit", days: 25, coins: 720, prizes: 1 },
-                        { name: "Mariana López", level: "JaguarFit", days: 24, coins: 690, prizes: 2 },
-                        { name: "Roberto Sánchez", level: "HalcónFit", days: 23, coins: 650, prizes: 1 },
-                        { name: "Juan Pérez", level: "KoalaFit", days: 20, coins: 520, prizes: 1 },
-                      ].map((item, i) => (
+                      {filteredTopCollaborators.map((item, i) => (
                         <tr key={i} className="border-b">
                           <td className="p-4 align-middle">{item.name}</td>
                           <td className="p-4 align-middle">
@@ -244,7 +266,7 @@ const Reports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {departmentData.map((dept, i) => (
+                      {filteredDepartments.map((dept, i) => (
                         <tr key={i} className="border-b">
                           <td className="p-4 align-middle">{dept.name}</td>
                           <td className="p-4 align-middle">{dept.active}</td>

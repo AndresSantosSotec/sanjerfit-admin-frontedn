@@ -42,6 +42,11 @@ export const CollaboratorModal = ({
     id: '',
     name: '',
     nickname: '',
+    birthDate: '',
+    hireDate: '',
+    age: undefined,
+    yearsAtInstitution: undefined,
+    ageGroup: 'Sin clasificar',
     email: '',
     phone: '',
     area: '',
@@ -81,6 +86,11 @@ export const CollaboratorModal = ({
         id: '',
         name: '',
         nickname: '',
+        birthDate: '',
+        hireDate: '',
+        age: undefined,
+        yearsAtInstitution: undefined,
+        ageGroup: 'Sin clasificar',
         email: '',
         phone: '',
         area: '',
@@ -260,6 +270,28 @@ export const CollaboratorModal = ({
                     value={formData.nickname || ''}
                     onChange={handleChange}
                     placeholder="Alias opcional"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="birthDate">Fecha de Nacimiento:</Label>
+                  <Input
+                    id="birthDate"
+                    name="birthDate"
+                    type="date"
+                    value={formData.birthDate || ''}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hireDate">Fecha de Ingreso:</Label>
+                  <Input
+                    id="hireDate"
+                    name="hireDate"
+                    type="date"
+                    value={formData.hireDate || ''}
+                    onChange={handleChange}
                   />
                 </div>
 

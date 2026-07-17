@@ -16,6 +16,7 @@ import PremiosPage from "./pages/Premios";
 import GeneralInfoPage from "./pages/GeneralInfo";
 import Reports from "./pages/Reports";
 import Security from "./pages/Security";
+import CoinManagement from "./pages/CoinManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="usuarios/notificaciones" element={<Notifications />} />
             <Route path="premios/entregar" element={<PrizeDelivery />} />
             <Route path="premios/inventario" element={<InventoryManagement />} />
+            <Route path="monedas" element={<CoinManagement />} />
           <Route path="informacion-general" element={<GeneralInfoPage />} />
           <Route path="reportes" element={<Reports />} />
             <Route path="reportes/actividades" element={<Reports />} />

@@ -4,6 +4,11 @@ export interface Collaborator {
   name: string;
   /** Alias visible en rankings */
   nickname?: string;
+  birthDate?: string;
+  hireDate?: string;
+  age?: number;
+  yearsAtInstitution?: number;
+  ageGroup?: '18-24' | '25-34' | '35-44' | '45-54' | '55+' | 'Sin clasificar';
   email: string;
   phone: string;
   area: string;
