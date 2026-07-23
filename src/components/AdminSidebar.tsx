@@ -4,8 +4,8 @@ import {
   Users, Shield, Home, BookOpen, Gift,
   ChevronDown, ChevronUp, X,
   LayoutDashboard, UserPlus, UsersRound, Bell,
-  Trophy, Truck, Package2, Coins,
-  ChevronLeft, ChevronRight
+  Trophy, Truck, Package2, Coins, Heart,
+  ChevronLeft, ChevronRight, Video, ShieldAlert
 } from 'lucide-react';
 import SanjerLogo from './SanjerLogo';
 
@@ -74,10 +74,28 @@ const AdminSidebar = ({
       clickable: true,
     },
     {
+      icon: <Video className="h-5 w-5" />,
+      title: "Comunidad Social",
+      path: "/comunidad/moderacion",
+      description: "Moderación & Retos",
+      clickable: false,
+      subItems: [
+        { title: "Moderación de Clips", path: "/comunidad/moderacion", icon: <ShieldAlert className="h-3.5 w-3.5" /> },
+        { title: "Retos Comunitarios", path: "/comunidad/retos", icon: <Trophy className="h-3.5 w-3.5" /> },
+      ],
+    },
+    {
       icon: <Trophy className="h-5 w-5" />,
       title: "Reportes",
       path: "/reportes",
       description: "Estadísticas y rankings",
+      clickable: true,
+    },
+    {
+      icon: <Heart className="h-5 w-5" />,
+      title: "Bienestar",
+      path: "/planes-bienestar",
+      description: "Planes y evaluaciones",
       clickable: true,
     },
     {

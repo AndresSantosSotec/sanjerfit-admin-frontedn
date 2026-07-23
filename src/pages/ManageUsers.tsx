@@ -147,58 +147,58 @@ export const ManageUsers: React.FC = () => {
   // Loading state
   const [loading, setLoading] = useState(true);
 
+  const mapBackendCollaborator = (col: BackendColaborator): Collaborator => {
+    const lvl = col.nivel_asignado
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    const level = (['KoalaFit','JaguarFit','HalconFit'].includes(lvl)
+      ? lvl : 'KoalaFit'
+    ) as 'KoalaFit'|'JaguarFit'|'HalconFit';
+
+    const st = col.user.status.toLowerCase() === 'activo' ? 'Activo' : 'Inactivo';
+    const status = st as 'Activo'|'Inactivo';
+
+    return {
+      id: String(col.id),
+      name: col.nombre,
+      nickname: (col as any).nickname ?? '',
+      birthDate: col.fecha_nacimiento ?? '',
+      hireDate: col.fecha_ingreso ?? '',
+      age: col.edad ?? undefined,
+      yearsAtInstitution: col.tiempo_laborando ?? undefined,
+      ageGroup: col.grupo_edad ?? 'Sin clasificar',
+      email: col.user.email,
+      phone: col.telefono,
+      area: col.area,
+      level,
+      status,
+      photo: col.photo_url ?? '',
+      address: (col as any).direccion ?? '',
+      occupation: (col as any).ocupacion ?? '',
+      weight: col.peso,
+      height: col.altura,
+      imcObjective: col.IMC_objetivo ?? 24,
+      weightObjective: col.peso_objetivo ?? 0,
+      bloodType: col.tipo_sangre,
+      allergies: col.alergias,
+      medicalConditions: col.padecimientos,
+      bmi: String(col.indice_masa_corporal),
+      coinFits: (col as any).coin_fits ?? 0,
+      lastActive: col.user.last_active_at?.split('T')[0] ?? ''
+    };
+  };
+
+  const fetchCollaborators = async () => {
+    const { data } = await api.get<BackendColaborator[]>('/webadmin/colaborators');
+    const mapped = data.map(mapBackendCollaborator);
+    setCollaborators(mapped);
+  };
+
   // 1) Carga inicial
   useEffect(() => {
     console.debug('⏳ Cargando colaboradores desde API…');
     setLoading(true);
-    api.get<BackendColaborator[]>('/webadmin/colaborators')
-      .then(({ data }) => {
-        console.debug('✅ Respuesta cruda:', data);
-        const mapped = data.map(col => {
-          // normalizar nivel y castear
-          const lvl = col.nivel_asignado
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '');
-          const level = (['KoalaFit','JaguarFit','HalconFit'].includes(lvl)
-            ? lvl : 'KoalaFit'
-          ) as 'KoalaFit'|'JaguarFit'|'HalconFit';
-
-          // normalizar status y castear
-          const st = col.user.status.toLowerCase() === 'activo' ? 'Activo' : 'Inactivo';
-          const status = st as 'Activo'|'Inactivo';
-
-          return {
-            id: String(col.id),
-            name: col.nombre,
-            nickname: (col as any).nickname ?? '',
-            birthDate: col.fecha_nacimiento ?? '',
-            hireDate: col.fecha_ingreso ?? '',
-            age: col.edad ?? undefined,
-            yearsAtInstitution: col.tiempo_laborando ?? undefined,
-            ageGroup: col.grupo_edad ?? 'Sin clasificar',
-            email: col.user.email,
-            phone: col.telefono,
-            area: col.area,
-            level,
-            status,
-            photo: col.photo_url ?? '',
-            address: (col as any).direccion ?? '',
-            occupation: (col as any).ocupacion ?? '',
-            weight: col.peso,
-            height: col.altura,
-            imcObjective: col.IMC_objetivo ?? 24,
-            weightObjective: col.peso_objetivo ?? 0,
-            bloodType: col.tipo_sangre,
-            allergies: col.alergias,
-            medicalConditions: col.padecimientos,
-            bmi: String(col.indice_masa_corporal),
-            coinFits: (col as any).coin_fits ?? 0,
-            lastActive: col.user.last_active_at?.split('T')[0] ?? ''
-          };
-        });
-        console.debug('✅ Mapeado:', mapped);
-        setCollaborators(mapped);
-      })
+    fetchCollaborators()
       .catch(err => {
         console.error('❌ Error al cargar colaboradores:', err);
         toast({ title: 'Error', description: 'No se pudo cargar colaboradores', variant: 'destructive' });
@@ -1094,6 +1094,7 @@ export const ManageUsers: React.FC = () => {
           isOpen={isViewModalOpen}
           onClose={() => setIsViewModalOpen(false)}
           collaborator={currentCollaborator}
+          onMedicalDataUpdated={fetchCollaborators}
         />
       )}
 

@@ -1,19 +1,148 @@
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Trash2 } from 'lucide-react';
 import { Collaborator } from '@/types/collaborator';
+import {
+  addCollaboratorWeightLog,
+  deleteCollaboratorWeightLog,
+  fetchCollaboratorMedicalInfo,
+  updateCollaboratorMedicalRecord,
+} from '@/services/medical';
+import type { AdminWeightLog } from '@/types/medical';
 
 interface CollaboratorViewProps {
   isOpen: boolean;
   onClose: () => void;
   collaborator: Collaborator;
+  onMedicalDataUpdated?: () => void | Promise<void>;
 }
 
-export const CollaboratorView = ({ isOpen, onClose, collaborator }: CollaboratorViewProps) => {
+export const CollaboratorView = ({ isOpen, onClose, collaborator, onMedicalDataUpdated }: CollaboratorViewProps) => {
+  const [medicalLoading, setMedicalLoading] = useState(false);
+  const [medicalError, setMedicalError] = useState<string | null>(null);
+  const [savingRecord, setSavingRecord] = useState(false);
+  const [savingWeight, setSavingWeight] = useState(false);
+  const [deletingWeightId, setDeletingWeightId] = useState<number | null>(null);
+
+  const [estadoInmunizacion, setEstadoInmunizacion] = useState('Incompleto');
+  const [historialVacunacion, setHistorialVacunacion] = useState('');
+  const [historialMedico, setHistorialMedico] = useState('');
+  const [weightHistory, setWeightHistory] = useState<AdminWeightLog[]>([]);
+  const [newWeight, setNewWeight] = useState('');
+  const [newWeightDate, setNewWeightDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const loadMedicalInfo = async () => {
+    setMedicalLoading(true);
+    setMedicalError(null);
+    try {
+      const data = await fetchCollaboratorMedicalInfo(collaborator.id);
+      setEstadoInmunizacion(data.record.estado_inmunizacion || 'Incompleto');
+      setHistorialVacunacion(data.record.historial_vacunacion || '');
+      setHistorialMedico(data.record.historial_medico || '');
+      setWeightHistory(data.weight_history || []);
+    } catch (error: any) {
+      setMedicalError(error?.response?.data?.message || 'No se pudo cargar la información médica.');
+    } finally {
+      setMedicalLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadMedicalInfo();
+    }
+  }, [isOpen, collaborator.id]);
+
+  const latestWeight = useMemo(() => {
+    if (!weightHistory.length) return null;
+    const sorted = [...weightHistory].sort((a, b) => a.fecha_registro.localeCompare(b.fecha_registro));
+    return sorted[sorted.length - 1];
+  }, [weightHistory]);
+
+  const currentWeight = latestWeight ? Number(latestWeight.peso) : Number(collaborator.weight);
+  const currentImc = latestWeight?.imc != null ? Number(latestWeight.imc) : Number(collaborator.bmi);
+
+  const chartData = useMemo(
+    () =>
+      [...weightHistory]
+        .sort((a, b) => a.fecha_registro.localeCompare(b.fecha_registro))
+        .map(item => ({
+          fecha: item.fecha_registro.slice(5),
+          peso: Number(item.peso),
+          imc: item.imc != null ? Number(item.imc) : null,
+        })),
+    [weightHistory]
+  );
+
+  const handleSaveRecord = async () => {
+    setSavingRecord(true);
+    try {
+      await updateCollaboratorMedicalRecord(collaborator.id, {
+        estado_inmunizacion: estadoInmunizacion,
+        historial_vacunacion: historialVacunacion,
+        historial_medico: historialMedico,
+      });
+      await loadMedicalInfo();
+      await onMedicalDataUpdated?.();
+    } catch (error: any) {
+      setMedicalError(error?.response?.data?.message || 'No se pudo guardar la ficha médica.');
+    } finally {
+      setSavingRecord(false);
+    }
+  };
+
+  const handleAddWeight = async () => {
+    const parsedWeight = Number(newWeight);
+    if (!parsedWeight || parsedWeight < 10 || parsedWeight > 500) {
+      setMedicalError('El peso debe estar entre 10 y 500.');
+      return;
+    }
+    if (!newWeightDate) {
+      setMedicalError('La fecha de registro es obligatoria.');
+      return;
+    }
+
+    setSavingWeight(true);
+    setMedicalError(null);
+    try {
+      await addCollaboratorWeightLog(collaborator.id, {
+        peso: parsedWeight,
+        fecha_registro: newWeightDate,
+      });
+      setNewWeight('');
+      await loadMedicalInfo();
+      await onMedicalDataUpdated?.();
+    } catch (error: any) {
+      setMedicalError(error?.response?.data?.message || 'No se pudo registrar el control de peso.');
+    } finally {
+      setSavingWeight(false);
+    }
+  };
+
+  const handleDeleteWeight = async (weightLogId: number) => {
+    const shouldDelete = window.confirm('Deseas eliminar este registro de peso?');
+    if (!shouldDelete) return;
+
+    setDeletingWeightId(weightLogId);
+    setMedicalError(null);
+    try {
+      await deleteCollaboratorWeightLog(weightLogId);
+      await loadMedicalInfo();
+      await onMedicalDataUpdated?.();
+    } catch (error: any) {
+      setMedicalError(error?.response?.data?.message || 'No se pudo eliminar el registro de peso.');
+    } finally {
+      setDeletingWeightId(null);
+    }
+  };
+
   const getLevelColor = (level: string) => {
     switch (level) {
       case 'HalconFit':
@@ -28,7 +157,7 @@ export const CollaboratorView = ({ isOpen, onClose, collaborator }: Collaborator
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Detalles del Colaborador</DialogTitle>
         </DialogHeader>
@@ -125,17 +254,161 @@ export const CollaboratorView = ({ isOpen, onClose, collaborator }: Collaborator
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-gray-500 text-sm">Peso:</span>
-                  <span className="col-span-2">{collaborator.weight} kg</span>
+                  <span className="col-span-2">{Number.isFinite(currentWeight) ? currentWeight : collaborator.weight} kg</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-gray-500 text-sm">IMC:</span>
-                  <span className="col-span-2">{collaborator.bmi}</span>
+                  <span className="col-span-2">{Number.isFinite(currentImc) ? currentImc : collaborator.bmi}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <span className="text-gray-500 text-sm">Inmunización:</span>
+                  <span className="col-span-2">{estadoInmunizacion || 'Incompleto'}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <span className="text-gray-500 text-sm">Tipo Sangre:</span>
                   <span className="col-span-2">{collaborator.bloodType}</span>
                 </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <span className="text-gray-500 text-sm">Ultimo peso:</span>
+                  <span className="col-span-2">
+                    {latestWeight ? `${latestWeight.peso} kg (${latestWeight.fecha_registro})` : 'Sin registros'}
+                  </span>
+                </div>
               </div>
+            </div>
+          </div>
+
+          {/* Ficha medica anual y control de peso */}
+          <div className="space-y-4 border rounded-xl p-4 bg-slate-50/70">
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="font-medium text-gray-700">Ficha Medica Anual y Control de Peso</h4>
+              {medicalLoading && <span className="text-xs text-gray-500">Cargando...</span>}
+            </div>
+
+            {medicalError && (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {medicalError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Button
+                type="button"
+                variant={estadoInmunizacion === 'Completo' ? 'default' : 'outline'}
+                onClick={() => setEstadoInmunizacion('Completo')}
+              >
+                Inmunizacion Completa
+              </Button>
+              <Button
+                type="button"
+                variant={estadoInmunizacion === 'Incompleto' ? 'default' : 'outline'}
+                onClick={() => setEstadoInmunizacion('Incompleto')}
+              >
+                Inmunizacion Incompleta
+              </Button>
+              <Button type="button" onClick={handleSaveRecord} disabled={savingRecord || medicalLoading}>
+                {savingRecord ? 'Guardando...' : 'Guardar ficha'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm text-gray-600">Historial de vacunacion</label>
+                <Textarea
+                  value={historialVacunacion}
+                  onChange={e => setHistorialVacunacion(e.target.value)}
+                  placeholder="Ej: Influenza, Tetanos, COVID-19"
+                  className="min-h-[96px] bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm text-gray-600">Historial medico</label>
+                <Textarea
+                  value={historialMedico}
+                  onChange={e => setHistorialMedico(e.target.value)}
+                  placeholder="Alergias, condiciones cronicas, observaciones"
+                  className="min-h-[96px] bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end border rounded-lg p-3 bg-white">
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm text-gray-600">Nuevo peso (kg)</label>
+                <Input
+                  type="number"
+                  min="10"
+                  max="500"
+                  step="0.1"
+                  value={newWeight}
+                  onChange={e => setNewWeight(e.target.value)}
+                  placeholder="Ej: 72.5"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm text-gray-600">Fecha registro</label>
+                <Input
+                  type="date"
+                  value={newWeightDate}
+                  onChange={e => setNewWeightDate(e.target.value)}
+                />
+              </div>
+              <Button type="button" onClick={handleAddWeight} disabled={savingWeight || medicalLoading}>
+                {savingWeight ? 'Guardando...' : 'Registrar peso'}
+              </Button>
+            </div>
+
+            {chartData.length > 0 ? (
+              <div className="h-[240px] rounded-lg border bg-white p-3">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 8, right: 16, left: -6, bottom: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="fecha" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="peso" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} name="Peso (kg)" />
+                    <Line type="monotone" dataKey="imc" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} name="IMC" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed p-4 text-sm text-gray-500 bg-white">
+                Sin historial de peso registrado.
+              </div>
+            )}
+
+            <div className="rounded-lg border bg-white overflow-hidden">
+              <div className="grid grid-cols-4 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
+                <span>Fecha</span>
+                <span>Peso (kg)</span>
+                <span>IMC</span>
+                <span className="text-right">Accion</span>
+              </div>
+              {weightHistory.length > 0 ? (
+                [...weightHistory]
+                  .sort((a, b) => b.fecha_registro.localeCompare(a.fecha_registro))
+                  .slice(0, 12)
+                  .map(item => (
+                    <div key={item.id} className="grid grid-cols-4 items-center px-3 py-2 border-t text-sm">
+                      <span>{item.fecha_registro}</span>
+                      <span>{item.peso}</span>
+                      <span>{item.imc ?? 'N/A'}</span>
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteWeight(item.id)}
+                          disabled={deletingWeightId === item.id}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="px-3 py-4 text-sm text-gray-500">No hay registros de peso.</div>
+              )}
             </div>
           </div>
           

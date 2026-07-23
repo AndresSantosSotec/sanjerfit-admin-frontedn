@@ -1,10 +1,12 @@
 import React, { Suspense, useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'motion/react';
 import AdminSidebar from '@/components/AdminSidebar';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
+  const location = useLocation();
 
   const toggleCollapse = () => {
     setIsCollapsed(prev => {
@@ -48,7 +50,9 @@ const AdminLayout = () => {
               </div>
             </div>
           }>
-            <Outlet />
+            <AnimatePresence mode="wait">
+              <Outlet key={location.pathname} />
+            </AnimatePresence>
           </Suspense>
         </div>
       </main>

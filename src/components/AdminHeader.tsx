@@ -85,7 +85,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, subtitle, onMenuToggle
   const handleLogout = async () => {
     try {
       await axios.post(
-        `${import.meta.env.VITE_API_URL}/logout`,
+        `${import.meta.env.VITE_API_URL}/webadmin/logout`,
         {},
         {
           headers: {
@@ -93,6 +93,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, subtitle, onMenuToggle
           },
         }
       );
+    } catch (error) {
+      // Aunque falle el servidor, limpiamos sesión local
+      console.warn('Logout server error (session cleared locally):', error);
+    } finally {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
       toast({
@@ -100,12 +104,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ title, subtitle, onMenuToggle
         description: 'Has sido desconectado correctamente.',
       });
       navigate('/login');
-    } catch (error) {
-      toast({
-        title: 'Error al cerrar sesión',
-        description: 'Inténtalo de nuevo.',
-        variant: 'destructive',
-      });
     }
   };
 

@@ -47,7 +47,7 @@ interface RankingsData {
 
 const Reports = () => {
   const { toast } = useToast();
-  const [timeFrame, setTimeFrame] = useState("month");
+  const [timeFrame, setTimeFrame] = useState("all");
   const [reportSearch, setReportSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [rankingType, setRankingType] = useState<'activities' | 'distance' | 'duration' | 'caminar' | 'correr' | 'gimnasio' | 'ciclismo'>('activities');
@@ -293,7 +293,7 @@ const Reports = () => {
                       {loading ? (
                         <tr>
                           <td colSpan={7} className="p-8 text-center text-slate-400">
-                            <ActivityIndicator className="h-6 w-6 animate-spin mx-auto mb-2 text-sanjer-green" />
+                            <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-sanjer-green" />
                             Cargando información...
                           </td>
                         </tr>

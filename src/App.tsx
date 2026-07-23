@@ -17,6 +17,9 @@ import GeneralInfoPage from "./pages/GeneralInfo";
 import Reports from "./pages/Reports";
 import Security from "./pages/Security";
 import CoinManagement from "./pages/CoinManagement";
+import WellnessPlans from "./pages/WellnessPlans";
+import SocialModeration from "./pages/SocialModeration";
+import ChallengesAdmin from "./pages/ChallengesAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,10 +43,13 @@ const App = () => (
             <Route path="premios/entregar" element={<PrizeDelivery />} />
             <Route path="premios/inventario" element={<InventoryManagement />} />
             <Route path="monedas" element={<CoinManagement />} />
-          <Route path="informacion-general" element={<GeneralInfoPage />} />
-          <Route path="reportes" element={<Reports />} />
+            <Route path="informacion-general" element={<GeneralInfoPage />} />
+            <Route path="comunidad/moderacion" element={<SocialModeration />} />
+            <Route path="comunidad/retos" element={<ChallengesAdmin />} />
+            <Route path="reportes" element={<Reports />} />
             <Route path="reportes/actividades" element={<Reports />} />
             <Route path="reportes/departamentos" element={<Reports />} />
+            <Route path="planes-bienestar" element={<WellnessPlans />} />
             <Route path="seguridad" element={<Security />} />
           </Route>
           
