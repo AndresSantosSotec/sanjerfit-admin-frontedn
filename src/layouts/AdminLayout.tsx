@@ -1,11 +1,14 @@
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useCallback } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
 import AdminSidebar from '@/components/AdminSidebar';
+import SessionTimeoutModal from '@/components/SessionTimeoutModal';
+import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const location = useLocation();
 
   const toggleCollapse = () => {
@@ -22,8 +25,38 @@ const AdminLayout = () => {
     return () => window.removeEventListener('toggle-sidebar', handleToggle);
   }, []);
 
+  const handleWarning = useCallback(() => {
+    setShowTimeoutWarning(true);
+  }, []);
+
+  const handleExpired = useCallback(() => {
+    setShowTimeoutWarning(false);
+  }, []);
+
+  const { extendSession, manualLogout } = useSessionTimeout({
+    onWarning: handleWarning,
+    onExpired: handleExpired,
+  });
+
+  const handleExtend = useCallback(() => {
+    setShowTimeoutWarning(false);
+    extendSession();
+  }, [extendSession]);
+
+  const handleLogout = useCallback(() => {
+    setShowTimeoutWarning(false);
+    manualLogout();
+  }, [manualLogout]);
+
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-[#0a0f1d] transition-colors duration-300">
+      {/* Session timeout warning modal */}
+      <SessionTimeoutModal
+        open={showTimeoutWarning}
+        onExtend={handleExtend}
+        onLogout={handleLogout}
+      />
+
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
