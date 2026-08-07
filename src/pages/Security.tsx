@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Plus, Edit, Trash2, EyeOff, Eye, CheckCircle2, XCircle,
-  Shield, Activity, LogIn, LogOut, Clock, Monitor
+  Shield, Activity, LogIn, LogOut, Clock, Monitor, PowerOff
 } from "lucide-react";
 import {
   Card, CardContent, CardHeader, CardTitle
@@ -96,6 +96,7 @@ const Security = () => {
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [sessionPage, setSessionPage] = useState(1);
   const [sessionFilter, setSessionFilter] = useState("");
+  const [terminatingId, setTerminatingId] = useState<number | null>(null);
 
   // Paginación usuarios
   const [page, setPage] = useState(1);
@@ -128,6 +129,24 @@ const Security = () => {
       .then(r => setSessions(r.data))
       .catch(() => toast({ title: "Error", description: "No se pudo cargar auditoría", variant: 'destructive' }))
       .finally(() => setSessionsLoading(false));
+  };
+
+  const handleTerminateSession = (logId: number) => {
+    if (!window.confirm('¿Seguro que deseas terminar esta sesión activa? El usuario será desconectado inmediatamente.')) return;
+    setTerminatingId(logId);
+    api.delete(`/webadmin/session-audit/${logId}`)
+      .then(() => {
+        toast({ title: "Sesión terminada", description: "La sesión fue revocada correctamente." });
+        fetchSessions(sessionPage);
+      })
+      .catch(e => {
+        toast({
+          title: "Error",
+          description: e.response?.data?.message ?? "No se pudo terminar la sesión",
+          variant: 'destructive'
+        });
+      })
+      .finally(() => setTerminatingId(null));
   };
 
   useEffect(() => {
@@ -427,18 +446,34 @@ const Security = () => {
                                     {parseAgent(s.user_agent)}
                                   </div>
                                 </td>
-                                {/* Estado */}
+                                {/* Estado + Acción */}
                                 <td className="px-4 py-3 text-xs">
-                                  {isActive ? (
-                                    <span className="inline-flex items-center gap-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/40 rounded-full px-2 py-0.5 text-[11px] font-medium">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                      Activa
-                                    </span>
-                                  ) : (
-                                    <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${REASON_COLORS[s.logout_reason ?? ''] ?? 'text-slate-500 dark:text-slate-400'}`}>
-                                      {REASON_LABELS[s.logout_reason ?? ''] ?? 'Cerrada'}
-                                    </span>
-                                  )}
+                                  <div className="flex items-center gap-2">
+                                    {isActive ? (
+                                      <span className="inline-flex items-center gap-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/40 rounded-full px-2 py-0.5 text-[11px] font-medium">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                        Activa
+                                      </span>
+                                    ) : (
+                                      <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${REASON_COLORS[s.logout_reason ?? ''] ?? 'text-slate-500 dark:text-slate-400'}`}>
+                                        {REASON_LABELS[s.logout_reason ?? ''] ?? 'Cerrada'}
+                                      </span>
+                                    )}
+                                    {isActive && (
+                                      <Button
+                                        size="icon"
+                                        variant="outline"
+                                        title="Terminar esta sesión"
+                                        disabled={terminatingId === s.id}
+                                        onClick={() => handleTerminateSession(s.id)}
+                                        className="h-6 w-6 border-red-200 dark:border-red-800/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-300 transition-colors"
+                                      >
+                                        {terminatingId === s.id
+                                          ? <span className="animate-spin h-3 w-3 rounded-full border border-red-400 border-t-transparent" />
+                                          : <PowerOff className="w-3 h-3" />}
+                                      </Button>
+                                    )}
+                                  </div>
                                 </td>
                               </tr>
                             );
