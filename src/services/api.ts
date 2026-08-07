@@ -40,4 +40,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Interceptor de respuesta global para manejar la expiración del token (401 Unauthorized)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Limpiar almacenamiento local
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('last_activity_ts');
+      
+      // Redirigir al login forzando la recarga para limpiar estados de React Router
+      const baseUrl = import.meta.env.BASE_URL || '/webadmin';
+      window.location.href = `${baseUrl}/login`;
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
