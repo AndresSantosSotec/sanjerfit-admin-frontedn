@@ -21,6 +21,7 @@ import WellnessPlans from "./pages/WellnessPlans";
 import SocialModeration from "./pages/SocialModeration";
 import ChallengesAdmin from "./pages/ChallengesAdmin";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -34,26 +35,29 @@ const App = () => (
           <Route path="/" element={<Navigate to="/login" />} />
           <Route path="/login" element={<Login />} />
           
-          <Route path="/" element={<AdminLayout />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="premios" element={<PremiosPage />} />
-            <Route path="usuarios/registrar" element={<UserRegistration />} />
-            <Route path="usuarios/gestionar" element={<ManageUsers />} /> {/* New route */}
-            <Route path="usuarios/notificaciones" element={<Notifications />} />
-            <Route path="premios/entregar" element={<PrizeDelivery />} />
-            <Route path="premios/inventario" element={<InventoryManagement />} />
-            <Route path="monedas" element={<CoinManagement />} />
-            <Route path="informacion-general" element={<GeneralInfoPage />} />
-            <Route path="comunidad/moderacion" element={<SocialModeration />} />
-            <Route path="comunidad/retos" element={<ChallengesAdmin />} />
-            <Route path="reportes" element={<Reports />} />
-            <Route path="reportes/actividades" element={<Reports />} />
-            <Route path="reportes/departamentos" element={<Reports />} />
-            <Route path="planes-bienestar" element={<WellnessPlans />} />
-            <Route path="seguridad" element={<Security />} />
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<AdminLayout />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="premios" element={<PremiosPage />} />
+              <Route path="usuarios/registrar" element={<UserRegistration />} />
+              <Route path="usuarios/gestionar" element={<ManageUsers />} /> {/* New route */}
+              <Route path="usuarios/notificaciones" element={<Notifications />} />
+              <Route path="premios/entregar" element={<PrizeDelivery />} />
+              <Route path="premios/inventario" element={<InventoryManagement />} />
+              <Route path="monedas" element={<CoinManagement />} />
+              <Route path="informacion-general" element={<GeneralInfoPage />} />
+              <Route path="comunidad/moderacion" element={<SocialModeration />} />
+              <Route path="comunidad/retos" element={<ChallengesAdmin />} />
+              <Route path="reportes" element={<Reports />} />
+              <Route path="reportes/actividades" element={<Reports />} />
+              <Route path="reportes/departamentos" element={<Reports />} />
+              <Route path="planes-bienestar" element={<WellnessPlans />} />
+              <Route path="seguridad" element={<Security />} />
+            </Route>
           </Route>
           
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
